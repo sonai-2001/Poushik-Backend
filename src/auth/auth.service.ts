@@ -10,11 +10,16 @@ import { ConfigService } from '@nestjs/config';
 import { ApiResponse } from '@common/types/api-response.type';
 import { RefreshToken } from '@modules/refresh-token/schemas/refresh-token.schema';
 import { RoleRepository } from '@modules/role/repositories/role.repository';
+import { v4 as uuidv4 } from 'uuid';
+
 import {
     ForgotPasswordDTO,
     ResetPasswordDTO,
     UserSignInDTO,
-    UserSignupDTO,
+    RegisterStep1DTO,
+    ParsedStep2PetOwnerDTO,
+    Step2PetDoctorDTO,
+    Step2SellerDTO,
 } from '@modules/users/dto/user.dto';
 import { UserRepository } from '@modules/users/repositories/user.repository';
 import { Types } from 'mongoose';
@@ -31,6 +36,7 @@ import { Request } from 'express';
 import { UserDeviceRepository } from '@modules/user-devices/repository/user-device.repository';
 import { WinstonLoggerService } from '@common/logger/winston.logger';
 import { createCipheriv, createDecipheriv } from 'node:crypto';
+import { RegistrationSessionRepository } from '@modules/registration-session/registration-session.repository';
 
 @Injectable()
 export class AuthService {
@@ -43,7 +49,8 @@ export class AuthService {
         private readonly configService: ConfigService,
         private readonly jwtService: JwtService,
         private readonly mailerService: MailerService,
-        private readonly userDeviceRepository: UserDeviceRepository
+        private readonly userDeviceRepository: UserDeviceRepository,
+        private readonly registrationRepo: RegistrationSessionRepository
     ) {
         this.winston = new WinstonLoggerService();
     }
@@ -150,12 +157,153 @@ export class AuthService {
 
     }
 
+
+    async startStep1(dto: RegisterStep1DTO, file?: Express.Multer.File) {
+        const existing = await this.registrationRepo.findByEmail(dto.email);
+        if (existing) throw new BadRequestException('A registration session already exists with this email.');
+
+        const hashedPassword = await hash(dto.password, 10);
+        const regToken = uuidv4();
+        const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes TTL
+
+        await this.registrationRepo.create({
+            regToken,
+            fullName: dto.fullName,
+            email: dto.email,
+            password: hashedPassword,
+            role: dto.role,
+            profileImage: file?.filename ?? null,
+            expiresAt,
+        });
+
+        return {
+            message: 'Step 1 completed. Proceed to next step.',
+            regToken,
+            nextStep: 'profile',
+        };
+    }
+    async processStep2PetOwner(
+        dto: ParsedStep2PetOwnerDTO,
+        files: Express.Multer.File[] = [],
+    ): Promise<{ message: string }> {
+        const session = await this.registrationRepo.findByRegToken(dto.regToken);
+        if (!session) {
+            throw new BadRequestException('Invalid or expired registration token');
+        }
+        if(session.role!= 'pet-owner'){
+            throw new BadRequestException('Invalid role for this step');
+        }
+        if (session.step2Completed) {
+            throw new BadRequestException('Step 2 already completed for this session.');
+        }
+
+        if (!Array.isArray(dto.pets) || dto.pets.length === 0) {
+            throw new BadRequestException('At least one pet must be provided');
+        }
+
+        if (dto.pets.length !== files.length) {
+            throw new BadRequestException('Mismatch between pets and uploaded images');
+        }
+
+        // Attach image filenames to pet objects
+        const petsWithImages = dto.pets.map((pet, index) => ({
+            ...pet,
+            imageName: files[index]?.filename ?? null,
+        }));
+
+        // Update session with pet owner data
+        await this.registrationRepo.updateByRegToken(dto.regToken, {
+            petOwnerData: {
+                phone: dto.phone,
+                address: dto.address,
+                pets: petsWithImages,
+            },
+            step2Completed: true,
+            step: 'step2',
+        });
+
+        return {
+            message: 'Pet owner step 2 completed successfully. Proceed to final confirmation or login.',
+        };
+    }
+
+    async processStep2PetDoctor(
+        dto: Step2PetDoctorDTO,
+        licenseFile?: Express.Multer.File,
+        images: Express.Multer.File[] = [],
+    ): Promise<{ message: string }> {
+        const session = await this.registrationRepo.findByRegToken(dto.regToken);
+        if (!session) throw new BadRequestException('Invalid or expired registration token');
+
+        if (session.step2Completed)
+            throw new BadRequestException('Step 2 already completed for this session.');
+        if(session.role !== 'pet-doctor')
+            throw new BadRequestException('You are not a pet doctor');
+
+        if (!licenseFile)
+            throw new BadRequestException('License document is required');
+
+        const imageFilenames = images.map((img) => img.filename);
+
+        await this.registrationRepo.updateByRegToken(dto.regToken, {
+            petDoctorData: {
+                phone: dto.phone,
+                clinicName: dto.clinicName,
+                clinicAddress: dto.clinicAddress,
+                specialization: dto.specialization,
+                licenseNumber: dto.licenseNumber,
+                licenseDocument: licenseFile.filename,
+                images: imageFilenames,
+            },
+            step2Completed: true,
+            step: 'step2',
+        });
+
+        return { message: 'Pet doctor step 2 completed successfully.' };
+    }
+
+
+    async processStep2Seller(
+        dto: Step2SellerDTO,
+        licenseFile?: Express.Multer.File,
+        images: Express.Multer.File[] = [],
+
+    ): Promise<{ message: string }> {
+        const session = await this.registrationRepo.findByRegToken(dto.regToken);
+        if (!session) throw new BadRequestException('Invalid or expired registration token');
+
+        if (session.step2Completed)
+            throw new BadRequestException('Step 2 already completed for this session.');
+
+        if (!licenseFile)
+            throw new BadRequestException('License document is required');
+        const imageFilenames = images.map((img) => img.filename);
+
+
+        await this.registrationRepo.updateByRegToken(dto.regToken, {
+            sellerData: {
+                phone: dto.phone,
+                storeName: dto.storeName,
+                businessLicense: dto.businessLicense,
+                licenseDocument: licenseFile.filename,
+                images:imageFilenames
+
+            },
+            step2Completed: true,
+            step: 'step2',
+        });
+
+        return { message: 'Seller step 2 completed successfully.' };
+    }
+
+
+
     async userSignup(
-        body: UserSignupDTO,
+        body: RegisterStep1DTO,
         files: Express.Multer.File[],
-        req: Request
+
     ): Promise<ApiResponse> {
-        const userRole = await this.roleRepository.getByField({ role: 'user' });
+        const userRole = await this.roleRepository.getByField({ role: body.role, isDeleted: false });
         if (!userRole?._id)
             throw new BadRequestException(Messages.ROLE_NOT_FOUND_ERROR);
 
@@ -194,38 +342,9 @@ export class AuthService {
             userDetails._id
         );
 
-        try {
-            const ip = getClientIp(req);
-            const geoIpInfo = ip ? lookup(ip) : null;
-            if (ip) {
-                const existingDeviceData = await this.userDeviceRepository.getByField({ accessToken: token });
-                const { ll, region, country, city, timezone } = geoIpInfo ?? {};
-                const deviceInfo: Partial<UserDevice> = {
-                    ip,
-                    ip_lat: ll?.[0]?.toString() || '',
-                    ip_long: ll?.[1]?.toString() || '',
-                    last_active: Date.now(),
-                    state: region || '',
-                    country: country || '',
-                    city: city || '',
-                    timezone: timezone || '',
-                    user_id: userDetails._id,
-                    accessToken: token,
-                    deviceToken: body.deviceToken ?? ''
-                }
-                await this.userDeviceRepository.saveOrUpdate(deviceInfo, existingDeviceData?._id);
-            }
-        } catch (err) {
-            const stackTrace = (err as Error)?.stack
-                ?.split('\n')
-                ?.reverse()
-                ?.slice(0, -2)
-                ?.reverse()
-                ?.join('\n');
-            this.winston.error(stackTrace, 'userLoginService');
-        }
 
-        this.invalidAccessToken(userDetails._id);
+
+
         return {
             message: Messages.USER_REGISTRATION_SUCCESS,
             data: {

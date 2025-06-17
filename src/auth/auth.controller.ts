@@ -1,15 +1,17 @@
 import {
+    BadRequestException,
     Body,
     Controller,
     Get,
     HttpCode,
     Post,
     Req,
+    UploadedFile,
     UploadedFiles,
     UseGuards,
     UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RefreshJwtDto } from './dto/auth.dto';
 import { AuthGuard } from '@nestjs/passport';
@@ -18,9 +20,17 @@ import {
     ForgotPasswordDTO,
     ResetPasswordDTO,
     UserSignInDTO,
-    UserSignupDTO,
+    RegisterStep1DTO,
+    Step2PetOwnerDTO,
+    PetInfoDTO,
+    ParsedStep2PetOwnerDTO,
+    Step2PetDoctorDTO,
+    Step2SellerDTO,
 } from '@modules/users/dto/user.dto';
-import { SingleFileInterceptor } from '@common/interceptors/files.interceptor';
+import {
+    MultiFileInterceptor,
+    SingleFileInterceptor,
+} from '@common/interceptors/files.interceptor';
 import { Request } from 'express';
 import { LoginUser } from '@common/decorator/login-user.decorator';
 import { UserDocument } from '@modules/users/schemas/user.schema';
@@ -28,13 +38,12 @@ import { UserDocument } from '@modules/users/schemas/user.schema';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-    constructor(private readonly authService: AuthService) { }
+    constructor(private readonly authService: AuthService) {}
 
     @Post('login-admin')
     @HttpCode(200)
     @UseGuards(ThrottlerGuard)
     async loginAdmin(@Body() dto: UserSignInDTO, @Req() req: Request) {
-
         return this.authService.userLogin(dto, req);
     }
 
@@ -44,16 +53,152 @@ export class AuthController {
         return this.authService.userLogin(dto, req);
     }
 
-    @Post('register')
+    @Post('register-step1')
     @UseGuards(ThrottlerGuard)
     @UseInterceptors(SingleFileInterceptor('users', 'profileImage'))
     @ApiConsumes('application/json', 'multipart/form-data')
     async signup(
-        @Body() dto: UserSignupDTO,
-        @Req() req: Request,
-        @UploadedFiles() files: Express.Multer.File[]
+        @Body() dto: RegisterStep1DTO,
+
+        @UploadedFile() files: Express.Multer.File,
     ) {
-        return this.authService.userSignup(dto, files, req);
+        return this.authService.startStep1(dto, files);
+    }
+
+    @Post('register-step2/pet-owner')
+    @UseGuards(ThrottlerGuard)
+    @ApiConsumes('multipart/form-data')
+    @UseInterceptors(MultiFileInterceptor([{ name: 'petImages', directory: 'pets', maxCount: 10 }]))
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                regToken: { type: 'string' },
+                phone: { type: 'string' },
+                address: { type: 'string' },
+                pets: {
+                    type: 'string',
+                    example: JSON.stringify([{ name: 'Buddy', type: 'Dog', breed: 'Beagle' }]),
+                },
+                petImages: {
+                    type: 'array',
+                    items: { type: 'string', format: 'binary' },
+                },
+            },
+        },
+    })
+    async step2PetOwner(
+        @Body() dto: Step2PetOwnerDTO,
+        @UploadedFiles() files: { petImages?: Express.Multer.File[] },
+    ) {
+        let pets: PetInfoDTO[];
+
+        try {
+            pets = JSON.parse(dto.pets);
+        } catch {
+            throw new BadRequestException('Invalid pets JSON format');
+        }
+
+        if (!Array.isArray(pets) || pets.length === 0) {
+            throw new BadRequestException('At least one pet must be provided');
+        }
+
+        // Attach image filenames
+        pets.forEach((pet, index) => {
+            pet.imageName = files.petImages?.[index]?.filename ?? null;
+        });
+
+        const parsedDto: ParsedStep2PetOwnerDTO = {
+            ...dto,
+            pets,
+        };
+
+        return this.authService.processStep2PetOwner(parsedDto, files.petImages ?? []);
+    }
+
+    @Post('register-step2/pet-doctor')
+    @UseGuards(ThrottlerGuard)
+    @ApiConsumes('multipart/form-data')
+    @UseInterceptors(
+        MultiFileInterceptor([
+            { name: 'licenseDocument', directory: 'licenses', maxCount: 1 },
+            { name: 'images', directory: 'doctor-images', maxCount: 10 },
+        ]),
+    )
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                regToken: { type: 'string' },
+                phone: { type: 'string' },
+                clinicName: { type: 'string' },
+                clinicAddress: { type: 'string' },
+                specialization: { type: 'string' },
+                licenseNumber: { type: 'string' },
+                licenseDocument: {
+                    type: 'string',
+                    format: 'binary',
+                },
+                images: {
+                    type: 'array',
+                    items: {
+                        type: 'string',
+                        format: 'binary',
+                    },
+                },
+            },
+        },
+    })
+    async step2PetDoctor(
+        @Body() dto: Step2PetDoctorDTO,
+        @UploadedFiles()
+            files: {
+            licenseDocument?: Express.Multer.File[];
+            images?: Express.Multer.File[];
+        },
+    ) {
+        const license = files.licenseDocument?.[0];
+        const imageFiles = files.images ?? [];
+        return this.authService.processStep2PetDoctor(dto, license, imageFiles);
+    }
+
+    @Post('register-step2/seller')
+    @UseGuards(ThrottlerGuard)
+    @ApiConsumes('multipart/form-data')
+    @UseInterceptors(
+        MultiFileInterceptor([{ name: 'licenseDocument', directory: 'licenses', maxCount: 1 }]),
+    )
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                regToken: { type: 'string' },
+                phone: { type: 'string' },
+                storeName: { type: 'string' },
+                businessLicense: { type: 'string' },
+
+                licenseDocument: {
+                    type: 'string',
+                    format: 'binary',
+                },
+                images: {
+                    type: 'array',
+                    items: {
+                        type: 'string',
+                        format: 'binary',
+                    },
+                },
+            },
+        },
+    })
+    async step2Seller(
+        @Body() dto: Step2SellerDTO,
+        @UploadedFiles() files: { licenseDocument?: Express.Multer.File[];
+            images?: Express.Multer.File[];
+         },
+    ) {
+        const licenseFile = files.licenseDocument?.[0];
+        return this.authService.processStep2Seller(dto, licenseFile);
     }
 
     @Post('forgot-password')
@@ -102,5 +247,4 @@ export class AuthController {
     async logoutUser(@Req() req: Request) {
         return this.authService.userLogout(req);
     }
-
 }

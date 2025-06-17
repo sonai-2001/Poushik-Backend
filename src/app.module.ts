@@ -14,6 +14,7 @@ import { CmsModule } from '@modules/cms/cms.module';
 import { CmsRepositoryModule } from '@modules/cms/repositories/cms.repository.module';
 import { RoleRepositoryModule } from '@modules/role/repositories/role.repository.module';
 import { ApiConfigModule } from './config.module';
+import { RegistrationSessionModule } from '@modules/registration-session/registration-session.module';
 
 
 
@@ -34,6 +35,7 @@ import { ApiConfigModule } from './config.module';
         CmsModule,
         CmsRepositoryModule,
         RoleRepositoryModule,
+        RegistrationSessionModule
     ],
     providers: []
 })

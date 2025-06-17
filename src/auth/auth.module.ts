@@ -6,6 +6,7 @@ import { AuthController } from './auth.controller';
 import { RefreshToken, RefreshTokenSchema } from '@modules/refresh-token/schemas/refresh-token.schema';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { RegistrationSessionModule } from '@modules/registration-session/registration-session.module';
 
 @Module({
     imports: [
@@ -20,7 +21,8 @@ import { ConfigService } from '@nestjs/config';
                 }
             }),
             inject: [ConfigService]
-        })
+        }),
+        RegistrationSessionModule
     ],
     controllers: [AuthController],
     providers: [AuthService, JwtStrategy],

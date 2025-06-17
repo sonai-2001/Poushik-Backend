@@ -1,4 +1,8 @@
 export enum UserRole {
   ADMIN = 'admin',
-  USER = 'user',
+  SUPER_ADMIN = 'super-admin',
+  PET_OWNER = 'pet-owner',
+  PET_DOCTOR = 'pet-doctor',
+  SELLER='seller'
+
 }

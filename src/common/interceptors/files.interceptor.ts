@@ -1,6 +1,6 @@
 import { normalizeFilename } from '@helpers/utils.helper';
 import { BadRequestException } from '@nestjs/common';
-import { FileFieldsInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { Request } from 'express';
 import { existsSync, mkdirSync, unlink } from 'fs';
 import { diskStorage } from 'multer';
@@ -21,35 +21,38 @@ const allowedExtensions = ['.jpeg', '.jpg', '.png', '.gif', '.pdf'];
  * @description Interceptor for handling single field fiel uploads with custom directories.
  * @description Use type example { Express.Multer.File[] }
  */
-export const SingleFileInterceptor = (directory: string, fieldName: string) => FilesInterceptor(fieldName, 25, {
-    limits: {
-        fileSize: 5 * 1024 * 1024,
-    },
-    storage: diskStorage({
-        destination(_req: Request, _file: Express.Multer.File, callback) {
-            if (!existsSync('./public')) mkdirSync('./public');
-            if (!existsSync('./public/uploads')) mkdirSync('./public/uploads');
-            if (!existsSync(`./public/uploads/${directory}`)) mkdirSync(`./public/uploads/${directory}`);
-
-            callback(null, `./public/uploads/${directory}`);
+// Rename it properly to reflect it's a single file interceptor
+export const SingleFileInterceptor = (directory: string, fieldName: string) =>
+    FileInterceptor(fieldName, {
+        limits: {
+            fileSize: 5 * 1024 * 1024, // 5 MB
         },
-        filename(_req, file, callback) {
-            callback(null, normalizeFilename(file.originalname));
+        storage: diskStorage({
+            destination(_req: Request, _file: Express.Multer.File, callback) {
+                const baseDir = `./public/uploads/${directory}`;
+                if (!existsSync('./public')) mkdirSync('./public');
+                if (!existsSync('./public/uploads')) mkdirSync('./public/uploads');
+                if (!existsSync(baseDir)) mkdirSync(baseDir);
+                callback(null, baseDir);
+            },
+            filename(_req, file, callback) {
+                callback(null, normalizeFilename(file.originalname));
+            },
+        }),
+        fileFilter(_req, file, callback) {
+            if (!allowedMimeTypes.includes(file.mimetype)) {
+                return callback(new BadRequestException(`Unsupported file type: ${file.mimetype}.`), false);
+            }
+
+            const ext = extname(file.originalname).toLowerCase();
+            if (!allowedExtensions.includes(ext)) {
+                return callback(new Error('Invalid file extension!'), false);
+            }
+
+            callback(null, true);
         },
-    }),
-    fileFilter(_req, file, callback) {
-        if (!allowedMimeTypes.includes(file.mimetype)) {
-            return callback(new BadRequestException(`Unsupported file type: ${file.mimetype}.`), false);
-        }
+    });
 
-        const ext = extname(file.originalname).toLowerCase();
-        if (!allowedExtensions.includes(ext)) {
-            return callback(new Error('Invalid file extension!'), false);
-        }
-
-        callback(null, true);
-    },
-})
 
 /**
  * @description Interceptor for handling multiple field file uploads with custom directories.
