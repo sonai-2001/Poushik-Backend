@@ -19,7 +19,8 @@
     "doc": "npx @compodoc/compodoc -p tsconfig.json -s --port 3001 --watch -d ./documentation",
     "migrate": "cross-env NODE_ENV=development ts-node -r tsconfig-paths/register src/migrate.ts",
     "prepare": "husky install",
-    "check": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepush": "npm run lint && npm run prettier && npm run typecheck"
   },
   "dependencies": {
     "@compodoc/compodoc": "^1.1.26",
