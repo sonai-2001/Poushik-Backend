@@ -28,11 +28,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
         const authHeader = req.headers['authorization'];
         const token = authHeader && authHeader.split(' ')[1]; // Removes "Bearer "
 
-        let tokenData = await this.userDeviceRepository.getByField({
-            "accessToken": token,
-            "expired": false,
-            "isLoggedOut": false,
-            "isDeleted": false,
+        const tokenData = await this.userDeviceRepository.getByField({
+            'accessToken': token,
+            'expired': false,
+            'isLoggedOut': false,
+            'isDeleted': false,
         });
         const lastSegment = req.originalUrl.split('/').pop();
 
