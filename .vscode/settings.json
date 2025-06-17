@@ -1,0 +1,21 @@
+{
+    // Run auto-fixes (like ESLint) on save
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.fixAll.eslint": "explicit"
+    },
+  
+    // Use ESLint as the default formatter
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+    "editor.formatOnSave": false, // disable VS Code’s default formatter
+  
+    // Enable ESLint validation for TS and JS
+    "eslint.validate": ["typescript", "javascript"],
+  
+    // Required if using eslint.config.mjs (Flat Config)
+    "eslint.experimental.useFlatConfig": true,
+  
+    // Optional: show Prettier warnings as ESLint errors
+    "prettier.requireConfig": true
+  }
+  
