@@ -17,13 +17,13 @@ export class User {
     @Prop({ type: String, default: '', index: true })
     fullName: string;
 
-    @Prop({ type: String, default: '', index: true })
+    @Prop({ type: String, required: true, unique: true, index: true })
     email: string;
 
     @Prop({ type: String, default: '', index: true })
     userName: string;
 
-    @Prop({ type: String, default: '' })
+    @Prop({ type: String, required: true })
     password: string;
 
     @Prop({ type: String, default: '' })
@@ -42,9 +42,26 @@ export class User {
 
     @Prop({ type: Boolean, default: false, index: true })
     isDeleted: boolean;
+
+    // ✅ Additional fields for OTP & KYC flow
+    @Prop({ type: Boolean, default: false })
+    isEmailVerified: boolean;
+
+    @Prop({ type: Boolean, default: false })
+    isKycApproved: boolean;
+
+    @Prop({ type: String, default: '' })
+    regToken: string;
+
+    @Prop({ type: String, default: '' })
+    otpCode: string;
+
+    @Prop({ type: Date })
+    otpExpiresAt: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
 UserSchema.index(
     { email: 1, isDeleted: 1 },
     { unique: true, partialFilterExpression: { isDeleted: false } },
@@ -53,6 +70,7 @@ UserSchema.index(
 UserSchema.methods.validPassword = function (password: string) {
     return compareSync(password, this.password);
 };
+
 UserSchema.methods.generateHash = function (password: string) {
     return hashSync(password, genSaltSync(+process.env.SALT_ROUND));
 };
@@ -64,7 +82,6 @@ UserSchema.pre('save', async function (next: any) {
     const salt = await genSalt(10);
     const hash = hashSync(user.password, salt);
     user.password = hash;
-
     next();
 });
 

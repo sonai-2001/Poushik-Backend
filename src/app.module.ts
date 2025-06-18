@@ -15,6 +15,9 @@ import { CmsRepositoryModule } from '@modules/cms/repositories/cms.repository.mo
 import { RoleRepositoryModule } from '@modules/role/repositories/role.repository.module';
 import { ApiConfigModule } from './config.module';
 import { RegistrationSessionModule } from '@modules/registration-session/registration-session.module';
+import { PetDoctorModule } from '@modules/pet-doctor/pet-doctor.module';
+import { PetOwnerModule } from '@modules/pet-owner/pet.owner.module';
+import { PetSellerModule } from '@modules/seller/seller.module';
 
 @Module({
     imports: [
@@ -34,6 +37,9 @@ import { RegistrationSessionModule } from '@modules/registration-session/registr
         CmsRepositoryModule,
         RoleRepositoryModule,
         RegistrationSessionModule,
+        PetDoctorModule,
+        PetOwnerModule,
+        PetSellerModule,
     ],
     providers: [],
 })

@@ -12,6 +12,11 @@ export class RegistrationSession extends Document {
 
     @Prop({ default: 'step1' }) step: string;
     @Prop({ required: true }) expiresAt: Date;
+    @Prop() otpCode?: string;
+
+    @Prop() otpExpiresAt?: Date;
+
+    @Prop({ default: false }) isEmailVerified?: boolean;
 
     // ✅ Step 2: Pet Owner
     @Prop({ type: Object }) petOwnerData?: {

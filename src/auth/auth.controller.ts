@@ -11,7 +11,7 @@ import {
     UseGuards,
     UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RefreshJwtDto } from './dto/auth.dto';
 import { AuthGuard } from '@nestjs/passport';
@@ -26,6 +26,8 @@ import {
     ParsedStep2PetOwnerDTO,
     Step2PetDoctorDTO,
     Step2SellerDTO,
+    SendOtpDTO,
+    VerifyOtpDTO,
 } from '@modules/users/dto/user.dto';
 import {
     MultiFileInterceptor,
@@ -202,6 +204,18 @@ export class AuthController {
         const licenseFile = files.licenseDocument?.[0];
         const imageFiles = files.images ?? [];
         return this.authService.processStep2Seller(dto, licenseFile, imageFiles);
+    }
+
+    @Post('send-otp')
+    @ApiOperation({ summary: 'Send OTP to email after step 2' })
+    async sendOtp(@Body() dto: SendOtpDTO) {
+        return this.authService.sendOtpToEmail(dto.regToken);
+    }
+
+    @Post('verify-otp')
+    @ApiOperation({ summary: 'Verify OTP sent to email' })
+    async verifyOtp(@Body() dto: VerifyOtpDTO) {
+        return this.authService.verifyOtp(dto.regToken, dto.otp);
     }
 
     @Post('forgot-password')

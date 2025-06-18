@@ -297,4 +297,15 @@ export class UserRepository extends BaseRepository<UserDocument> {
             docs: aggregate,
         };
     }
+    async findByEmail(email: string) {
+        return this.UserModel.findOne({ email, isDeleted: false });
+    }
+
+    async createUser(data: Partial<User>) {
+        return this.UserModel.create(data);
+    }
+
+    async updateByRegToken(token: string, update: Partial<User>) {
+        return this.UserModel.findOneAndUpdate({ regToken: token }, update, { new: true });
+    }
 }

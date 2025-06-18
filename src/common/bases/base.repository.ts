@@ -29,6 +29,7 @@ export class BaseRepository<T> {
     }
 
     async save(body: Partial<T>): Promise<T> {
+        console.log(body);
         return await this.model.create(body);
     }
 

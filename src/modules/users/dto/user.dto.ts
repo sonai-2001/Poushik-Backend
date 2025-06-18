@@ -10,6 +10,7 @@ import {
     IsNumber,
     IsOptional,
     IsString,
+    Length,
     Matches,
     MinLength,
 } from 'class-validator';
@@ -242,6 +243,24 @@ export class Step2SellerDTO {
     })
     @IsOptional()
     images: any; /// this will be handled at controller level
+}
+
+export class SendOtpDTO {
+    @ApiProperty({ example: 'abc123', description: 'Registration token' })
+    @IsString()
+    regToken: string;
+}
+// dto/verify-otp.dto.ts
+
+export class VerifyOtpDTO {
+    @ApiProperty({ example: 'abc123', description: 'Registration token' })
+    @IsString()
+    regToken: string;
+
+    @ApiProperty({ example: '123456', description: '6-digit OTP code' })
+    @IsString()
+    @Length(6, 6)
+    otp: string;
 }
 
 export class UserSignInDTO {

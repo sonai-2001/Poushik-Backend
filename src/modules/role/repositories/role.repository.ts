@@ -104,4 +104,11 @@ export class RoleRepository extends BaseRepository<RoleDocument> {
             docs: aggregate,
         };
     }
+    async getIdByKey(roleKey: string): Promise<string> {
+        const role = await this.getByField({ role: roleKey, isDeleted: false });
+        if (!role) {
+            throw new InternalServerErrorException(`Role '${roleKey}' not found`);
+        }
+        return role._id.toString();
+    }
 }

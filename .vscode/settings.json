@@ -1,8 +1,8 @@
 {
   // ✅ Auto-fix ESLint + Prettier issues on save
   "editor.codeActionsOnSave": {
-    "source.fixAll": true,
-    "source.fixAll.eslint": true
+    "source.fixAll": "explicit",
+    "source.fixAll.eslint": "explicit"
   },
 
   // ✅ Set ESLint as default formatter

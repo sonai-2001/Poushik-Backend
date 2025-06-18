@@ -33,6 +33,9 @@ import { UserDeviceRepository } from '@modules/user-devices/repository/user-devi
 import { WinstonLoggerService } from '@common/logger/winston.logger';
 import { createCipheriv, createDecipheriv } from 'node:crypto';
 import { RegistrationSessionRepository } from '@modules/registration-session/registration-session.repository';
+import { PetOwnerRepository } from '@modules/pet-owner/pet.owner.repository';
+import { PetDoctorRepository } from '@modules/pet-doctor/pet-doctor.repository';
+import { PetSellerRepository } from '@modules/seller/seller.repository';
 
 @Injectable()
 export class AuthService {
@@ -47,6 +50,9 @@ export class AuthService {
         private readonly mailerService: MailerService,
         private readonly userDeviceRepository: UserDeviceRepository,
         private readonly registrationRepo: RegistrationSessionRepository,
+        private readonly petOwnerRepo: PetOwnerRepository,
+        private readonly petDoctorRepo: PetDoctorRepository,
+        private readonly petSellerRepo: PetSellerRepository,
     ) {
         this.winston = new WinstonLoggerService();
     }
@@ -161,6 +167,11 @@ export class AuthService {
     }
 
     async startStep1(dto: RegisterStep1DTO, file?: Express.Multer.File) {
+        const userRole = await this.roleRepository.getByField({
+            role: dto.role,
+            isDeleted: false,
+        });
+        if (!userRole?._id) throw new BadRequestException(Messages.ROLE_NOT_FOUND_ERROR);
         const existing = await this.registrationRepo.findByEmail(dto.email);
         if (existing)
             throw new BadRequestException('A registration session already exists with this email.');
@@ -292,6 +303,124 @@ export class AuthService {
         });
 
         return { message: 'Seller step 2 completed successfully.' };
+    }
+
+    async sendOtpToEmail(regToken: string) {
+        const session = await this.registrationRepo.findByRegToken(regToken);
+        if (!session) throw new BadRequestException('Invalid registration token');
+
+        if (session.isEmailVerified) throw new BadRequestException('Email already verified');
+        if (
+            session.otpCode &&
+            session.otpExpiresAt &&
+            session.otpExpiresAt.getTime() > Date.now()
+        ) {
+            throw new BadRequestException(
+                'An OTP has already been sent. Please wait until it expires.',
+            );
+        }
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // expires in 10 min
+
+        await this.registrationRepo.updateByRegToken(regToken, {
+            otpCode,
+            otpExpiresAt,
+        });
+
+        await this.mailerService.sendMail(
+            'no-reply@poshik.com',
+            session.email,
+            'Your POSHIK OTP Code',
+            'otp-template', // ➜ views/email-templates/otp-template/html.ejs
+            { name: session.fullName, otp: otpCode },
+        );
+
+        return { message: 'OTP sent to your email.' };
+    }
+
+    async verifyOtp(regToken: string, otp: string) {
+        const session = await this.registrationRepo.findByRegToken(regToken);
+        if (!session || !session.otpCode || !session.otpExpiresAt) {
+            throw new BadRequestException('OTP not found. Please resend.');
+        }
+
+        if (session.otpExpiresAt.getTime() < Date.now()) {
+            throw new BadRequestException('OTP expired. Please resend.');
+        }
+
+        if (session.otpCode !== otp) {
+            throw new BadRequestException('Invalid OTP. Try again.');
+        }
+
+        if (session.isEmailVerified) {
+            return { message: 'OTP already verified.' };
+        }
+
+        // ✅ Validate role
+        if (!session.role) {
+            throw new BadRequestException('User role missing in session.');
+        }
+
+        const roleId = await this.roleRepository.getIdByKey(session.role);
+
+        // ✅ Step 1: Create User
+        const createdUser = await this.userRepository.save({
+            email: session.email,
+            fullName: session.fullName,
+            password: session.password, // Already hashed at registration step
+            role: roleId,
+            status: 'Active',
+            isEmailVerified: true,
+            profileImage: session.profileImage,
+        });
+
+        // ✅ Step 2: Create Role-Specific Profile
+        switch (session.role) {
+            case 'pet-owner':
+                if (!session.petOwnerData) {
+                    throw new BadRequestException('Missing pet owner details.');
+                }
+                console.log('Saving Pet Owner data...');
+
+                await this.petOwnerRepo.save({
+                    userId: createdUser._id,
+                    ...session.petOwnerData,
+                });
+                break;
+
+            case 'pet-doctor':
+                if (!session.petDoctorData) {
+                    throw new BadRequestException('Missing pet doctor details.');
+                }
+                await this.petDoctorRepo.save({
+                    userId: createdUser._id,
+                    ...session.petDoctorData,
+                });
+                break;
+
+            case 'seller':
+                if (!session.sellerData) {
+                    throw new BadRequestException('Missing seller details.');
+                }
+                await this.petSellerRepo.save({
+                    userId: createdUser._id,
+                    ...session.sellerData,
+                });
+                break;
+
+            default:
+                throw new BadRequestException(`Invalid role: ${session.role}`);
+        }
+
+        // ✅ Step 3: Mark session complete
+        await this.registrationRepo.updateByRegToken(regToken, {
+            isEmailVerified: true,
+            otpCode: null,
+            otpExpiresAt: null,
+            step2Completed: true,
+        });
+
+        return { message: 'OTP verified successfully. Account created!' };
     }
 
     async userSignup(body: RegisterStep1DTO, files: Express.Multer.File[]): Promise<ApiResponse> {
