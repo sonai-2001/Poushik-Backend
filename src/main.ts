@@ -47,77 +47,75 @@ async function bootstrap() {
     app.useStaticAssets(resolve('./public'));
     app.setBaseViewsDir(resolve('./views'));
 
-    if (configService.getOrThrow('NODE_ENV') === 'development') {
-        const createConfig = (title: string, description: string) => {
-            return new DocumentBuilder()
-                .setOpenAPIVersion('3.1.0')
-                .addBearerAuth()
-                .setTitle(title)
-                .setDescription(description)
-                .setVersion('1.0')
-                .addTag('Auth')
-                .addServer(configService.get('BACKEND_URL'))
-                .build();
-        };
+    const createConfig = (title: string, description: string) => {
+        return new DocumentBuilder()
+            .setOpenAPIVersion('3.1.0')
+            .addBearerAuth()
+            .setTitle(title)
+            .setDescription(description)
+            .setVersion('1.0')
+            .addTag('Auth')
+            .addServer(configService.get('BACKEND_URL'))
+            .build();
+    };
 
-        const configAdmin = createConfig(
-            'Admin panel API',
-            'The Admin panel API. <br><br> API endpoints for Frontend application API. <br> <a  href="/apidoc/v1/user"> Frontend application API-Doc </a>',
-        );
-        const configApi = createConfig(
-            'Frontend application API',
-            'The User API. <br><br> API endpoints for Admin panel API. <br> <a  href="/apidoc/v1"> Admin panel API-Doc </a>',
-        );
+    const configAdmin = createConfig(
+        'Admin panel API',
+        'The Admin panel API. <br><br> API endpoints for Frontend application API. <br> <a  href="/apidoc/v1/user"> Frontend application API-Doc </a>',
+    );
+    const configApi = createConfig(
+        'Frontend application API',
+        'The User API. <br><br> API endpoints for Admin panel API. <br> <a  href="/apidoc/v1"> Admin panel API-Doc </a>',
+    );
 
-        const documentAdmin = SwaggerModule.createDocument(app, configAdmin);
-        const documentApi = SwaggerModule.createDocument(app, configApi);
+    const documentAdmin = SwaggerModule.createDocument(app, configAdmin);
+    const documentApi = SwaggerModule.createDocument(app, configApi);
 
-        // Admin APIDoc URL
-        SwaggerModule.setup(
-            'apidoc/v1',
-            app,
-            {
-                ...documentAdmin,
-                paths: Object.fromEntries(
-                    Object.entries(documentAdmin.paths).filter(
-                        ([key]) =>
-                            key.includes('admin') ||
-                            (key.includes('auth') &&
-                                !key.includes('register') &&
-                                !key.includes('login-user') &&
-                                !key.includes('logout-user')),
-                    ),
+    // Admin APIDoc URL
+    SwaggerModule.setup(
+        'apidoc/v1',
+        app,
+        {
+            ...documentAdmin,
+            paths: Object.fromEntries(
+                Object.entries(documentAdmin.paths).filter(
+                    ([key]) =>
+                        key.includes('admin') ||
+                        (key.includes('auth') &&
+                            !key.includes('register') &&
+                            !key.includes('login-user') &&
+                            !key.includes('logout-user')),
                 ),
+            ),
+        },
+        {
+            swaggerOptions: {
+                defaultModelsExpandDepth: -1, // Hides the Schemas section
             },
-            {
-                swaggerOptions: {
-                    defaultModelsExpandDepth: -1, // Hides the Schemas section
-                },
-            },
-        );
-        // User APIDoc URL
-        SwaggerModule.setup(
-            'apidoc/v1/user',
-            app,
-            {
-                ...documentApi,
-                paths: Object.fromEntries(
-                    Object.entries(documentApi.paths).filter(
-                        ([key]) =>
-                            !key.includes('admin') ||
-                            (key.includes('auth') &&
-                                !key.includes('login-admin') &&
-                                !key.includes('logout-admin')),
-                    ),
+        },
+    );
+    // User APIDoc URL
+    SwaggerModule.setup(
+        'apidoc/v1/user',
+        app,
+        {
+            ...documentApi,
+            paths: Object.fromEntries(
+                Object.entries(documentApi.paths).filter(
+                    ([key]) =>
+                        !key.includes('admin') ||
+                        (key.includes('auth') &&
+                            !key.includes('login-admin') &&
+                            !key.includes('logout-admin')),
                 ),
+            ),
+        },
+        {
+            swaggerOptions: {
+                defaultModelsExpandDepth: -1, // Hides the Schemas section
             },
-            {
-                swaggerOptions: {
-                    defaultModelsExpandDepth: -1, // Hides the Schemas section
-                },
-            },
-        );
-    }
+        },
+    );
 
     await app.listen(configService.getOrThrow('PORT'), () => {
         logger.debug(

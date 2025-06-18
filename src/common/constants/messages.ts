@@ -22,4 +22,5 @@ export const Messages = {
     PASSWORD_UPDATE_SUCCESS: 'Password updated successfully.',
 
     SOMETHING_WENT_WRONG: 'Something went wrong!',
+    EMAIL_NOT_VERIFIED: 'Your email is not verified. Please verify your email.',
 };

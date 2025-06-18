@@ -176,7 +176,7 @@ export class AuthService {
         if (existing)
             throw new BadRequestException('A registration session already exists with this email.');
 
-        const hashedPassword = await hash(dto.password, 10);
+        // const hashedPassword = await hash(dto.password, 10);
         const regToken = uuidv4();
         const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes TTL
 
@@ -184,7 +184,7 @@ export class AuthService {
             regToken,
             fullName: dto.fullName,
             email: dto.email,
-            password: hashedPassword,
+            password: dto.password,
             role: dto.role,
             profileImage: file?.filename ?? null,
             expiresAt,
@@ -423,51 +423,6 @@ export class AuthService {
         return { message: 'OTP verified successfully. Account created!' };
     }
 
-    async userSignup(body: RegisterStep1DTO, files: Express.Multer.File[]): Promise<ApiResponse> {
-        const userRole = await this.roleRepository.getByField({
-            role: body.role,
-            isDeleted: false,
-        });
-        if (!userRole?._id) throw new BadRequestException(Messages.ROLE_NOT_FOUND_ERROR);
-
-        const userExists = await this.userRepository.getByField({
-            email: body.email,
-            isDeleted: false,
-        });
-        if (userExists?._id) throw new BadRequestException(Messages.USER_EXIST_ERROR);
-
-        if (files?.length) {
-            for (const file of files) {
-                body[file.fieldname] = file.filename;
-            }
-        }
-
-        (body as Partial<UserDocument>).role = userRole._id;
-        const saveUser = await this.userRepository.save(body);
-        if (!saveUser?._id)
-            throw new BadRequestException(
-                saveUser instanceof Error ? saveUser?.message : Messages.SOMETHING_WENT_WRONG,
-            );
-
-        const userDetails = await this.userRepository.getUserDetails({
-            _id: saveUser._id,
-        });
-        if (!userDetails) throw new BadRequestException(Messages.USER_MISSING_ERROR);
-
-        const payload = { id: userDetails._id };
-        const token = this.jwtService.sign(payload);
-        const refreshToken = await this.generateRefreshToken(token, userDetails._id);
-
-        return {
-            message: Messages.USER_REGISTRATION_SUCCESS,
-            data: {
-                user: userDetails,
-                accessToken: token,
-                refreshToken: refreshToken,
-            },
-        };
-    }
-
     async userLogin(body: UserSignInDTO, req: Request): Promise<ApiResponse> {
         const requestedRoute = req.originalUrl.split('/').pop();
 
@@ -475,10 +430,11 @@ export class AuthService {
             email: body.email,
             isDeleted: false,
         });
-
+        console.log(checkIfExists);
         if (!checkIfExists?._id) throw new BadRequestException(Messages.USER_MISSING_ERROR);
 
         if (!checkIfExists.validPassword(body.password)) {
+            console.log('Invalid credentials');
             throw new BadRequestException(Messages.INVALID_CREDENTIALS_ERROR);
         }
 
@@ -486,13 +442,20 @@ export class AuthService {
             _id: checkIfExists._id,
         });
         if (!userDetails) throw new BadRequestException(Messages.USER_MISSING_ERROR);
+        console.log(userDetails);
+        const isAdmin =
+            userDetails.role['role'] === 'admin' || userDetails.role['role'] === 'super-admin';
+        const isAdminRoute = requestedRoute === 'login-admin';
 
-        if ((userDetails.role['role'] === 'admin') !== (requestedRoute === 'login-admin')) {
+        if (isAdmin !== isAdminRoute) {
             throw new BadRequestException(Messages.INVALID_CREDENTIALS_ERROR);
         }
 
         if (userDetails.status === 'Inactive') {
             throw new BadRequestException(Messages.USER_INACTIVE_ERROR);
+        }
+        if (!userDetails.isEmailVerified) {
+            throw new BadRequestException(Messages.EMAIL_NOT_VERIFIED);
         }
 
         const payload = { id: checkIfExists._id };

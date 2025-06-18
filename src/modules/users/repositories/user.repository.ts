@@ -65,20 +65,20 @@ export class UserRepository extends BaseRepository<UserDocument> {
             {
                 $lookup: {
                     from: 'roles',
-                    let: { role: '$role' },
+                    let: { roleId: '$role' },
                     pipeline: [
                         {
                             $match: {
-                                $expr: {
-                                    $and: [{ $eq: ['$_id', '$$role'] }],
-                                },
+                                $expr: { $eq: ['$_id', '$$roleId'] },
                             },
                         },
                         {
                             $project: {
-                                _id: '$_id',
-                                role: '$role',
-                                roleDisplayName: '$roleDisplayName',
+                                _id: 1,
+                                role: 1,
+                                roleDisplayName: 1,
+                                roleGroup: 1,
+                                status: 1,
                             },
                         },
                     ],
@@ -91,15 +91,15 @@ export class UserRepository extends BaseRepository<UserDocument> {
                     password: 0,
                     isDeleted: 0,
                     updatedAt: 0,
-                    countryCode: 0,
-                    phone: 0,
-                    emailOtp: 0,
-                    otpExpireTime: 0,
+                    otpCode: 0,
+                    otpExpiresAt: 0,
+                    regToken: 0,
+                    resetPasswordToken: 0,
                 },
             },
         ]);
-        if (!aggregate?.length) return null;
-        return aggregate[0];
+
+        return aggregate?.[0] || null;
     }
 
     async getAllPaginateAdmin(

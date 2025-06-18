@@ -51,6 +51,7 @@ export class AuthController {
 
     @Post('login-user')
     @HttpCode(200)
+    @UseGuards(ThrottlerGuard)
     async loginUser(@Body() dto: UserSignInDTO, @Req() req: Request) {
         return this.authService.userLogin(dto, req);
     }
