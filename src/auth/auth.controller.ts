@@ -152,7 +152,7 @@ export class AuthController {
     async step2PetDoctor(
         @Body() dto: Step2PetDoctorDTO,
         @UploadedFiles()
-            files: {
+        files: {
             licenseDocument?: Express.Multer.File[];
             images?: Express.Multer.File[];
         },
@@ -197,7 +197,7 @@ export class AuthController {
     async step2Seller(
         @Body() dto: Step2SellerDTO,
         @UploadedFiles()
-            files: { licenseDocument?: Express.Multer.File[]; images?: Express.Multer.File[] },
+        files: { licenseDocument?: Express.Multer.File[]; images?: Express.Multer.File[] },
     ) {
         const licenseFile = files.licenseDocument?.[0];
         const imageFiles = files.images ?? [];

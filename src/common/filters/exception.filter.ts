@@ -26,23 +26,23 @@ export class CustomExceptionFilter implements ExceptionFilter {
         };
 
         switch (exceptionStatus) {
-        case HttpStatus.BAD_REQUEST:
-            const exceptionResponse = exception.getResponse();
-            if (typeof exceptionResponse === 'object' && 'message' in exceptionResponse) {
-                const messages = Array.isArray(exceptionResponse['message'])
-                    ? exceptionResponse['message']
-                    : [exceptionResponse['message']];
-                data.message = messages[0];
-            }
-            break;
-        case HttpStatus.UNAUTHORIZED:
-            data.message = 'Unauthorized';
-            break;
-        case HttpStatus.TOO_MANY_REQUESTS:
-            data.message = 'Too Many Requests';
-            break;
-        default:
-            break;
+            case HttpStatus.BAD_REQUEST:
+                const exceptionResponse = exception.getResponse();
+                if (typeof exceptionResponse === 'object' && 'message' in exceptionResponse) {
+                    const messages = Array.isArray(exceptionResponse['message'])
+                        ? exceptionResponse['message']
+                        : [exceptionResponse['message']];
+                    data.message = messages[0];
+                }
+                break;
+            case HttpStatus.UNAUTHORIZED:
+                data.message = 'Unauthorized';
+                break;
+            case HttpStatus.TOO_MANY_REQUESTS:
+                data.message = 'Too Many Requests';
+                break;
+            default:
+                break;
         }
 
         return response.status(exceptionStatus).json(data);
