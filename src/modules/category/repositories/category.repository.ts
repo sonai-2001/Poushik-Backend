@@ -40,8 +40,7 @@ export class CategoryRepository extends BaseRepository<CategoryDocument> {
 
         if (!paginatedDto.parentId) {
             and_clauses.push({ parentId: { $eq: null } });
-        }
-        else {
+        } else {
             and_clauses.push({ parentId: { $eq: new Types.ObjectId(paginatedDto.parentId) } });
         }
 
@@ -72,10 +71,7 @@ export class CategoryRepository extends BaseRepository<CategoryDocument> {
             { $sort: { [sortField]: sortOrder } }, // Dynamic sorting
         ];
 
-        const countPipeline: PipelineStage[] = [
-            { $match: conditions },
-            { $count: 'total' },
-        ];
+        const countPipeline: PipelineStage[] = [{ $match: conditions }, { $count: 'total' }];
 
         // Perform the aggregation
         const [countResult, aggregate] = await Promise.all([

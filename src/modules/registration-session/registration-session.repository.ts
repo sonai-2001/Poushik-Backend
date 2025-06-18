@@ -6,8 +6,8 @@ import { RegistrationSession } from './registration-session.schema';
 @Injectable()
 export class RegistrationSessionRepository {
     constructor(
-    @InjectModel(RegistrationSession.name)
-    private readonly model: Model<RegistrationSession>,
+        @InjectModel(RegistrationSession.name)
+        private readonly model: Model<RegistrationSession>,
     ) {}
 
     async findByEmail(email: string) {

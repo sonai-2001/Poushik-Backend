@@ -1,6 +1,6 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsOptional, IsNumber } from "class-validator";
-import { Types } from "mongoose";
+import { ApiProperty } from '@nestjs/swagger';
+import { IsOptional, IsNumber } from 'class-validator';
+import { Types } from 'mongoose';
 
 export class UserDeviceListingDto {
     @ApiProperty({ default: 1 })
@@ -12,5 +12,5 @@ export class UserDeviceListingDto {
     limit?: number;
 
     @IsOptional()
-    user_id: string | Types.ObjectId
+    user_id: string | Types.ObjectId;
 }

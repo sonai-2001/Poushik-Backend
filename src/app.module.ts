@@ -16,8 +16,6 @@ import { RoleRepositoryModule } from '@modules/role/repositories/role.repository
 import { ApiConfigModule } from './config.module';
 import { RegistrationSessionModule } from '@modules/registration-session/registration-session.module';
 
-
-
 @Module({
     imports: [
         ApiConfigModule,
@@ -35,8 +33,8 @@ import { RegistrationSessionModule } from '@modules/registration-session/registr
         CmsModule,
         CmsRepositoryModule,
         RoleRepositoryModule,
-        RegistrationSessionModule
+        RegistrationSessionModule,
     ],
-    providers: []
+    providers: [],
 })
-export class AppModule { }
+export class AppModule {}

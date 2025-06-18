@@ -1,6 +1,5 @@
 import crypto from 'crypto';
 
-
 /**
  * Normalizes a filename by replacing spaces with lodash, truncating the name to fit within a 20 character limit,
  * and appending a timestamp to ensure uniqueness.
@@ -22,7 +21,6 @@ const normalizeFilename = (str: string): string => {
     return `${timestamp}_${truncatedName}.${extension}`;
 };
 
-
 /**
  * A utility function that safely handles asynchronous operations.
  * It returns a tuple where the first element is an error (if any) and the second element is the result.
@@ -39,7 +37,6 @@ const safeAsync = async <T>(promise: Promise<T>): Promise<[Error | null, T | nul
         return [error as Error, null];
     }
 };
-
 
 /**
  * Checks if a value is a number.
@@ -58,7 +55,7 @@ const isNumber = (value: any): boolean => {
  * @returns {Promise<void>} A promise that resolves after the specified time.
  */
 const sleep = (ms: number): Promise<void> => {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
 /**
@@ -88,12 +85,15 @@ const throttle = (func: (...args) => void, limit: number) => {
             lastRan = Date.now();
         } else {
             clearTimeout(lastFunc);
-            lastFunc = setTimeout(() => {
-                if (Date.now() - lastRan >= limit) {
-                    func(...args);
-                    lastRan = Date.now();
-                }
-            }, limit - (Date.now() - lastRan));
+            lastFunc = setTimeout(
+                () => {
+                    if (Date.now() - lastRan >= limit) {
+                        func(...args);
+                        lastRan = Date.now();
+                    }
+                },
+                limit - (Date.now() - lastRan),
+            );
         }
     };
 };
@@ -141,7 +141,6 @@ const generateSlug = (text: string): string => {
         .replace(/^-+|-+$/g, '');
 };
 
-
 /**
  * Encrypts text using AES-256-CBC encryption.
  *
@@ -165,7 +164,7 @@ const encryptText = (text: string, secretKey: string): string => {
  * @returns {string} The decrypted text.
  */
 const decryptText = (encryptedText: string, secretKey: string): string => {
-    const [iv, encrypted] = encryptedText.split(':').map(part => Buffer.from(part, 'base64'));
+    const [iv, encrypted] = encryptedText.split(':').map((part) => Buffer.from(part, 'base64'));
     const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(secretKey), iv);
     let decrypted = decipher.update(encrypted.toString('base64'), 'base64', 'utf8');
     decrypted += decipher.final('utf8');
@@ -180,11 +179,13 @@ const decryptText = (encryptedText: string, secretKey: string): string => {
  * @param {object} update - Object containing name fields to synchronize.
  * @returns {object} The updated object with synchronized name fields.
  */
-const synchronizeNameFields = (update: Partial<{
-    fullName?: string;
-    firstName?: string;
-    lastName?: string;
-}>): { fullName?: string; firstName?: string; lastName?: string; } => {
+const synchronizeNameFields = (
+    update: Partial<{
+        fullName?: string;
+        firstName?: string;
+        lastName?: string;
+    }>,
+): { fullName?: string; firstName?: string; lastName?: string } => {
     if (!update?.firstName && !update?.lastName && !update?.fullName) return update;
     if (update.fullName && !update.firstName && !update.lastName) {
         const nameParts = update.fullName?.split(/\s+/);
@@ -197,7 +198,6 @@ const synchronizeNameFields = (update: Partial<{
     }
     return update;
 };
-
 
 export {
     normalizeFilename,
@@ -212,4 +212,4 @@ export {
     encryptText,
     decryptText,
     synchronizeNameFields,
-}
+};

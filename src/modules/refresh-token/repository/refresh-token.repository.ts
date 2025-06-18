@@ -6,9 +6,7 @@ import { RefreshToken, RefreshTokenDocument } from '../schemas/refresh-token.sch
 
 @Injectable()
 export class RefreshTokenRepository extends BaseRepository<RefreshTokenDocument> {
-    constructor(
-        @InjectModel(RefreshToken.name) RefreshTokenModel: Model<RefreshTokenDocument>,
-    ) {
+    constructor(@InjectModel(RefreshToken.name) RefreshTokenModel: Model<RefreshTokenDocument>) {
         super(RefreshTokenModel);
     }
 }

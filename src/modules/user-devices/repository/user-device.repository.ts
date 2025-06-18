@@ -9,11 +9,15 @@ import { PaginationResponse } from '@common/types/api-response.type';
 @Injectable()
 export class UserDeviceRepository extends BaseRepository<UserDeviceDocument> {
     constructor(
-        @InjectModel(UserDevice.name) private readonly userDeviceModel: Model<UserDeviceDocument>) {
+        @InjectModel(UserDevice.name) private readonly userDeviceModel: Model<UserDeviceDocument>,
+    ) {
         super(userDeviceModel);
     }
 
-    async getAllDevicesPaginated(paginatedDto: UserDeviceListingDto, token?: string): Promise<PaginationResponse<UserDeviceDocument>> {
+    async getAllDevicesPaginated(
+        paginatedDto: UserDeviceListingDto,
+        token?: string,
+    ): Promise<PaginationResponse<UserDeviceDocument>> {
         try {
             type MongoQuery = {
                 [key: string]: any;
@@ -23,9 +27,13 @@ export class UserDeviceRepository extends BaseRepository<UserDeviceDocument> {
 
             const page = paginatedDto.page || 1;
             const limit = paginatedDto.limit || 10;
-            const skip = (page - 1) * (limit);
+            const skip = (page - 1) * limit;
 
-            and_clauses.push({ isDeleted: false, expired: false, user_id: new Types.ObjectId(paginatedDto.user_id) });
+            and_clauses.push({
+                isDeleted: false,
+                expired: false,
+                user_id: new Types.ObjectId(paginatedDto.user_id),
+            });
 
             conditions['$and'] = and_clauses;
 
@@ -53,24 +61,21 @@ export class UserDeviceRepository extends BaseRepository<UserDeviceDocument> {
                         expired: '$expired',
                         role: '$role',
                         isDeleted: '$isDeleted',
-                        isCurrent: { $eq: ['$accessToken', token] }
-                    }
+                        isCurrent: { $eq: ['$accessToken', token] },
+                    },
                 },
                 { $sort: { _id: -1 } },
-            ]
-
-            const countPipeline: PipelineStage[] = [
-                { $match: conditions },
-                { $count: 'total' }
             ];
+
+            const countPipeline: PipelineStage[] = [{ $match: conditions }, { $count: 'total' }];
 
             const [countResult, aggregate] = await Promise.all([
                 this.userDeviceModel.aggregate(countPipeline, { allowDiskUse: true }).exec(),
-                this.userDeviceModel.aggregate(filterPipeline, { allowDiskUse: true }).exec()
+                this.userDeviceModel.aggregate(filterPipeline, { allowDiskUse: true }).exec(),
             ]);
 
             const totalDocs = countResult.length ? countResult[0].total : 0;
-            const hasNextPage = totalDocs > 0 && (totalDocs - (skip + aggregate.length) > 0);
+            const hasNextPage = totalDocs > 0 && totalDocs - (skip + aggregate.length) > 0;
             const hasPrevPage = page != 1;
             const totalPages = Math.ceil(totalDocs / limit);
 
@@ -83,8 +88,8 @@ export class UserDeviceRepository extends BaseRepository<UserDeviceDocument> {
                     limit: limit,
                     hasPrevPage,
                     hasNextPage,
-                    prevPage: hasPrevPage ? (page - 1) : null,
-                    nextPage: hasNextPage ? (page + 1) : null,
+                    prevPage: hasPrevPage ? page - 1 : null,
+                    nextPage: hasNextPage ? page + 1 : null,
                 },
                 docs: aggregate,
             };

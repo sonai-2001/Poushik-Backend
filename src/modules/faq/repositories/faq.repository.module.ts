@@ -14,10 +14,10 @@ import { FaqRepository } from './faq.repository';
                     return schema;
                 },
             },
-        ])
+        ]),
     ],
     controllers: [],
     providers: [FaqRepository],
-    exports: [FaqRepository]
+    exports: [FaqRepository],
 })
 export class FaqRepositoryModule {}

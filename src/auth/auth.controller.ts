@@ -166,10 +166,10 @@ export class AuthController {
     @UseGuards(ThrottlerGuard)
     @ApiConsumes('multipart/form-data')
     @UseInterceptors(
-        MultiFileInterceptor([{ name: 'licenseDocument', directory: 'licenses', maxCount: 1 },
-            { name: 'images', directory: 'seller-images', maxCount: 10 }
+        MultiFileInterceptor([
+            { name: 'licenseDocument', directory: 'licenses', maxCount: 1 },
+            { name: 'images', directory: 'seller-images', maxCount: 10 },
         ]),
-
     )
     @ApiBody({
         schema: {
@@ -201,7 +201,7 @@ export class AuthController {
     ) {
         const licenseFile = files.licenseDocument?.[0];
         const imageFiles = files.images ?? [];
-        return this.authService.processStep2Seller(dto, licenseFile,imageFiles);
+        return this.authService.processStep2Seller(dto, licenseFile, imageFiles);
     }
 
     @Post('forgot-password')

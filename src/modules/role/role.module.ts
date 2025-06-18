@@ -6,13 +6,9 @@ import { RoleService } from './role.service';
 
 @Global()
 @Module({
-    imports: [
-        MongooseModule.forFeature([
-            { name: Role.name, schema: RoleSchema }
-        ])
-    ],
+    imports: [MongooseModule.forFeature([{ name: Role.name, schema: RoleSchema }])],
     controllers: [RoleController],
     providers: [RoleService],
-    exports: [RoleService]
+    exports: [RoleService],
 })
-export class RoleModule { }
+export class RoleModule {}

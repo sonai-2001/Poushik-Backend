@@ -1,10 +1,4 @@
-import {
-    FilterQuery,
-    Model,
-    ProjectionFields,
-    Types,
-    UpdateQuery,
-} from 'mongoose';
+import { FilterQuery, Model, ProjectionFields, Types, UpdateQuery } from 'mongoose';
 import mongodb from 'mongodb';
 
 export class BaseRepository<T> {
@@ -38,19 +32,13 @@ export class BaseRepository<T> {
         return await this.model.create(body);
     }
 
-    async updateById(
-        data: UpdateQuery<T>,
-        id: string | Types.ObjectId,
-    ): Promise<T> {
+    async updateById(data: UpdateQuery<T>, id: string | Types.ObjectId): Promise<T> {
         return await this.model.findByIdAndUpdate(id, data, {
             new: true,
         });
     }
 
-    async getDistinctDocument(
-        field: string,
-        params: FilterQuery<T>,
-    ): Promise<unknown[]> {
+    async getDistinctDocument(field: string, params: FilterQuery<T>): Promise<unknown[]> {
         return await this.model.distinct(field, params);
     }
 
@@ -83,16 +71,11 @@ export class BaseRepository<T> {
         return await this.model.updateOne(param, data, { new: true });
     }
 
-    async updateAllByParams(
-        data: UpdateQuery<T>,
-        params: FilterQuery<mongodb.UpdateResult>,
-    ) {
+    async updateAllByParams(data: UpdateQuery<T>, params: FilterQuery<mongodb.UpdateResult>) {
         return await this.model.updateMany(params, { $set: data }, { new: true });
     }
 
-    async bulkDeleteSoft(
-        ids: Types.ObjectId[] | string[],
-    ): Promise<mongodb.UpdateResult> {
+    async bulkDeleteSoft(ids: Types.ObjectId[] | string[]): Promise<mongodb.UpdateResult> {
         return await this.model.updateMany(
             { _id: { $in: ids } },
             { $set: { isDeleted: true } },
@@ -100,13 +83,9 @@ export class BaseRepository<T> {
         );
     }
 
-    async saveOrUpdate(
-        data: UpdateQuery<T>,
-        id: string | Types.ObjectId = undefined,
-    ): Promise<T> {
+    async saveOrUpdate(data: UpdateQuery<T>, id: string | Types.ObjectId = undefined): Promise<T> {
         const isExists = await this.model.findById(id);
-        if (isExists)
-            return await this.model.findByIdAndUpdate(id, data, { new: true });
+        if (isExists) return await this.model.findByIdAndUpdate(id, data, { new: true });
         return await this.model.create(data);
     }
 }

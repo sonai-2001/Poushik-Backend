@@ -1,4 +1,16 @@
-import { Body, Controller, Post, UseGuards, Get, Param, Delete, Version, HttpCode, Patch, ValidationPipe } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Post,
+    UseGuards,
+    Get,
+    Param,
+    Delete,
+    Version,
+    HttpCode,
+    Patch,
+    ValidationPipe,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { FaqService } from './faq.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -8,9 +20,7 @@ import { MongoIdPipe } from '@common/pipes/mongoid.pipe';
 @ApiTags('FAQ')
 @Controller('admin/faq')
 export class FaqController {
-    constructor(
-        private readonly faqService: FaqService
-    ) { }
+    constructor(private readonly faqService: FaqService) {}
 
     @Version('1')
     @Post('getall')
@@ -63,5 +73,4 @@ export class FaqController {
     async deleteFaq(@Param('id', new MongoIdPipe()) id: string) {
         return this.faqService.delete(id);
     }
-
 }

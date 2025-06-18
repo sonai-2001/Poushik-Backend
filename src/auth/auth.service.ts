@@ -1,9 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import {
-    BadRequestException,
-    Injectable,
-    UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { hash, genSalt } from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -50,14 +46,14 @@ export class AuthService {
         private readonly jwtService: JwtService,
         private readonly mailerService: MailerService,
         private readonly userDeviceRepository: UserDeviceRepository,
-        private readonly registrationRepo: RegistrationSessionRepository
+        private readonly registrationRepo: RegistrationSessionRepository,
     ) {
         this.winston = new WinstonLoggerService();
     }
 
     async generateRefreshToken(
         accessToken: string,
-        user: string | Types.ObjectId
+        user: string | Types.ObjectId,
     ): Promise<string> {
         const salt = await genSalt(10);
 
@@ -69,11 +65,10 @@ export class AuthService {
     }
 
     async invalidAccessToken(user: Types.ObjectId): Promise<boolean> {
-
         const tokenDatas = await this.userDeviceRepository.getAllByField({
-            'user_id': user,
-            'expired': false,
-            'isDeleted': false,
+            user_id: user,
+            expired: false,
+            isDeleted: false,
         });
 
         tokenDatas.filter(async (tokenDoc) => {
@@ -82,9 +77,12 @@ export class AuthService {
                     secret: this.configService.getOrThrow('JWT_SECRET'),
                 });
             } catch (err) {
-                await this.userDeviceRepository.updateById({
-                    'expired': true,
-                }, tokenDoc?._id);
+                await this.userDeviceRepository.updateById(
+                    {
+                        expired: true,
+                    },
+                    tokenDoc?._id,
+                );
                 // return false; // expired or tampered
             }
         });
@@ -93,20 +91,19 @@ export class AuthService {
     }
 
     async refreshToken(body: RefreshJwtDto): Promise<ApiResponse> {
-
         const authToken = body.accessToken;
 
         const tokenData = await this.userDeviceRepository.getByField({
-            'accessToken': authToken,
-            'isLoggedOut': false,
+            accessToken: authToken,
+            isLoggedOut: false,
             // "expired": true,
-            'isDeleted': false,
+            isDeleted: false,
         });
 
         if (tokenData?._id) {
             const refreshTokenHash = await hash(
                 body.accessToken.split('.')[2] + body.refreshToken,
-                body.refreshToken
+                body.refreshToken,
             );
 
             const refreshTokenData = await this.refreshTokenRepository.getByField({
@@ -114,13 +111,17 @@ export class AuthService {
             });
             if (!refreshTokenData) throw new BadRequestException(Messages.INVALID_TOKEN_ERROR);
 
-            const user = await this.userRepository.getByField({ _id: new Types.ObjectId(refreshTokenData.userId), isDeleted: false, status: 'Active' });
+            const user = await this.userRepository.getByField({
+                _id: new Types.ObjectId(refreshTokenData.userId),
+                isDeleted: false,
+                status: 'Active',
+            });
             if (!user?._id) throw new BadRequestException(Messages.USER_MISSING_ERROR);
 
             const expiresDate = new Date(refreshTokenData.createdAt);
             expiresDate.setSeconds(
                 expiresDate.getSeconds() +
-                this.configService.getOrThrow<number>('JWT_REFRESH_EXPIRES_IN')
+                    this.configService.getOrThrow<number>('JWT_REFRESH_EXPIRES_IN'),
             );
             if (refreshTokenData.createdAt > expiresDate) {
                 await this.refreshTokenRepository.delete(refreshTokenData._id);
@@ -137,30 +138,32 @@ export class AuthService {
                 await this.refreshTokenRepository.save(refreshTokenData);
             }
 
-            const existingDeviceData = await this.userDeviceRepository.getByField({ accessToken: body.accessToken });
+            const existingDeviceData = await this.userDeviceRepository.getByField({
+                accessToken: body.accessToken,
+            });
 
             if (existingDeviceData?._id) {
-                await this.userDeviceRepository.updateById({
-                    accessToken: token
-                }, existingDeviceData?._id);
+                await this.userDeviceRepository.updateById(
+                    {
+                        accessToken: token,
+                    },
+                    existingDeviceData?._id,
+                );
             }
 
             return {
                 message: Messages.REFRESH_TOKEN_ISSUED_SUCCESS,
                 data: { accessToken: token, refreshToken: salt },
             };
-
-        }
-        else {
+        } else {
             throw new UnauthorizedException('Token has been invalidated. Please log in again.');
         }
-
     }
-
 
     async startStep1(dto: RegisterStep1DTO, file?: Express.Multer.File) {
         const existing = await this.registrationRepo.findByEmail(dto.email);
-        if (existing) throw new BadRequestException('A registration session already exists with this email.');
+        if (existing)
+            throw new BadRequestException('A registration session already exists with this email.');
 
         const hashedPassword = await hash(dto.password, 10);
         const regToken = uuidv4();
@@ -190,7 +193,7 @@ export class AuthService {
         if (!session) {
             throw new BadRequestException('Invalid or expired registration token');
         }
-        if(session.role!= 'pet-owner'){
+        if (session.role != 'pet-owner') {
             throw new BadRequestException('Invalid role for this step');
         }
         if (session.step2Completed) {
@@ -223,7 +226,8 @@ export class AuthService {
         });
 
         return {
-            message: 'Pet owner step 2 completed successfully. Proceed to final confirmation or login.',
+            message:
+                'Pet owner step 2 completed successfully. Proceed to final confirmation or login.',
         };
     }
 
@@ -237,11 +241,10 @@ export class AuthService {
 
         if (session.step2Completed)
             throw new BadRequestException('Step 2 already completed for this session.');
-        if(session.role !== 'pet-doctor')
+        if (session.role !== 'pet-doctor')
             throw new BadRequestException('You are not a pet doctor');
 
-        if (!licenseFile)
-            throw new BadRequestException('License document is required');
+        if (!licenseFile) throw new BadRequestException('License document is required');
 
         const imageFilenames = images.map((img) => img.filename);
 
@@ -262,12 +265,10 @@ export class AuthService {
         return { message: 'Pet doctor step 2 completed successfully.' };
     }
 
-
     async processStep2Seller(
         dto: Step2SellerDTO,
         licenseFile?: Express.Multer.File,
         images: Express.Multer.File[] = [],
-
     ): Promise<{ message: string }> {
         const session = await this.registrationRepo.findByRegToken(dto.regToken);
         if (!session) throw new BadRequestException('Invalid or expired registration token');
@@ -275,10 +276,8 @@ export class AuthService {
         if (session.step2Completed)
             throw new BadRequestException('Step 2 already completed for this session.');
 
-        if (!licenseFile)
-            throw new BadRequestException('License document is required');
+        if (!licenseFile) throw new BadRequestException('License document is required');
         const imageFilenames = images.map((img) => img.filename);
-
 
         await this.registrationRepo.updateByRegToken(dto.regToken, {
             sellerData: {
@@ -286,8 +285,7 @@ export class AuthService {
                 storeName: dto.storeName,
                 businessLicense: dto.businessLicense,
                 licenseDocument: licenseFile.filename,
-                images:imageFilenames
-
+                images: imageFilenames,
             },
             step2Completed: true,
             step: 'step2',
@@ -296,23 +294,18 @@ export class AuthService {
         return { message: 'Seller step 2 completed successfully.' };
     }
 
-
-
-    async userSignup(
-        body: RegisterStep1DTO,
-        files: Express.Multer.File[],
-
-    ): Promise<ApiResponse> {
-        const userRole = await this.roleRepository.getByField({ role: body.role, isDeleted: false });
-        if (!userRole?._id)
-            throw new BadRequestException(Messages.ROLE_NOT_FOUND_ERROR);
+    async userSignup(body: RegisterStep1DTO, files: Express.Multer.File[]): Promise<ApiResponse> {
+        const userRole = await this.roleRepository.getByField({
+            role: body.role,
+            isDeleted: false,
+        });
+        if (!userRole?._id) throw new BadRequestException(Messages.ROLE_NOT_FOUND_ERROR);
 
         const userExists = await this.userRepository.getByField({
             email: body.email,
             isDeleted: false,
         });
-        if (userExists?._id)
-            throw new BadRequestException(Messages.USER_EXIST_ERROR);
+        if (userExists?._id) throw new BadRequestException(Messages.USER_EXIST_ERROR);
 
         if (files?.length) {
             for (const file of files) {
@@ -324,26 +317,17 @@ export class AuthService {
         const saveUser = await this.userRepository.save(body);
         if (!saveUser?._id)
             throw new BadRequestException(
-                saveUser instanceof Error
-                    ? saveUser?.message
-                    : Messages.SOMETHING_WENT_WRONG
+                saveUser instanceof Error ? saveUser?.message : Messages.SOMETHING_WENT_WRONG,
             );
 
         const userDetails = await this.userRepository.getUserDetails({
             _id: saveUser._id,
         });
-        if (!userDetails)
-            throw new BadRequestException(Messages.USER_MISSING_ERROR);
+        if (!userDetails) throw new BadRequestException(Messages.USER_MISSING_ERROR);
 
         const payload = { id: userDetails._id };
         const token = this.jwtService.sign(payload);
-        const refreshToken = await this.generateRefreshToken(
-            token,
-            userDetails._id
-        );
-
-
-
+        const refreshToken = await this.generateRefreshToken(token, userDetails._id);
 
         return {
             message: Messages.USER_REGISTRATION_SUCCESS,
@@ -356,7 +340,6 @@ export class AuthService {
     }
 
     async userLogin(body: UserSignInDTO, req: Request): Promise<ApiResponse> {
-
         const requestedRoute = req.originalUrl.split('/').pop();
 
         const checkIfExists = await this.userRepository.getByField({
@@ -364,8 +347,7 @@ export class AuthService {
             isDeleted: false,
         });
 
-        if (!checkIfExists?._id)
-            throw new BadRequestException(Messages.USER_MISSING_ERROR);
+        if (!checkIfExists?._id) throw new BadRequestException(Messages.USER_MISSING_ERROR);
 
         if (!checkIfExists.validPassword(body.password)) {
             throw new BadRequestException(Messages.INVALID_CREDENTIALS_ERROR);
@@ -374,8 +356,7 @@ export class AuthService {
         const userDetails = await this.userRepository.getUserDetails({
             _id: checkIfExists._id,
         });
-        if (!userDetails)
-            throw new BadRequestException(Messages.USER_MISSING_ERROR);
+        if (!userDetails) throw new BadRequestException(Messages.USER_MISSING_ERROR);
 
         if ((userDetails.role['role'] === 'admin') !== (requestedRoute === 'login-admin')) {
             throw new BadRequestException(Messages.INVALID_CREDENTIALS_ERROR);
@@ -387,16 +368,15 @@ export class AuthService {
 
         const payload = { id: checkIfExists._id };
         const token = this.jwtService.sign(payload);
-        const refreshToken = await this.generateRefreshToken(
-            token,
-            checkIfExists._id
-        );
+        const refreshToken = await this.generateRefreshToken(token, checkIfExists._id);
 
         try {
             const ip = getClientIp(req);
             const geoIpInfo = ip ? lookup(ip) : null;
             if (ip) {
-                const existingDeviceData = await this.userDeviceRepository.getByField({ accessToken: token });
+                const existingDeviceData = await this.userDeviceRepository.getByField({
+                    accessToken: token,
+                });
                 const { ll, region, country, city, timezone } = geoIpInfo ?? {};
                 const deviceInfo: Partial<UserDevice> = {
                     ip,
@@ -409,8 +389,8 @@ export class AuthService {
                     timezone: timezone || '',
                     user_id: userDetails._id,
                     accessToken: token,
-                    deviceToken: body.deviceToken ?? ''
-                }
+                    deviceToken: body.deviceToken ?? '',
+                };
                 await this.userDeviceRepository.saveOrUpdate(deviceInfo, existingDeviceData?._id);
             }
         } catch (err) {
@@ -440,31 +420,19 @@ export class AuthService {
             email: body.email,
             isDeleted: false,
         });
-        if (!checkIfExists?._id)
-            throw new BadRequestException(Messages.USER_MISSING_ERROR);
+        if (!checkIfExists?._id) throw new BadRequestException(Messages.USER_MISSING_ERROR);
 
-        const key = Buffer.from(
-            this.configService.get<string>('CRYPTO_AES_KEY'),
-            'hex'
-        );
-        const iv = Buffer.from(
-            this.configService.get<string>('CRYPTO_AES_IV'),
-            'hex'
-        );
+        const key = Buffer.from(this.configService.get<string>('CRYPTO_AES_KEY'), 'hex');
+        const iv = Buffer.from(this.configService.get<string>('CRYPTO_AES_IV'), 'hex');
 
-        const cipher = createCipheriv(
-            this.configService.get('CRYPTO_ALGORITHM'),
-            key,
-            iv
-        );
+        const cipher = createCipheriv(this.configService.get('CRYPTO_ALGORITHM'), key, iv);
         const payload = JSON.stringify({
             id: checkIfExists._id,
             iat: Date.now() + 500 * 1000,
         });
-        const token = Buffer.concat([
-            cipher.update(payload, 'utf8'),
-            cipher.final(),
-        ]).toString('hex');
+        const token = Buffer.concat([cipher.update(payload, 'utf8'), cipher.final()]).toString(
+            'hex',
+        );
 
         const sender = `${this.configService.get<string>('PROJECT_NAME')} Admin<${this.configService.get<string>('SITE_EMAIL')}>`;
         const locals = {
@@ -478,7 +446,7 @@ export class AuthService {
                 checkIfExists.email,
                 'Password Reset Link',
                 'forgot-password',
-                locals
+                locals,
             );
         } catch (error) {
             throw new BadRequestException(error);
@@ -488,7 +456,7 @@ export class AuthService {
             {
                 resetPasswordToken: token,
             },
-            checkIfExists._id
+            checkIfExists._id,
         );
 
         return { message: Messages.FORGOT_PASSWORD_SUCCESS };
@@ -498,20 +466,10 @@ export class AuthService {
         let decoded: { id: string; iat: number };
 
         try {
-            const key = Buffer.from(
-                this.configService.get<string>('CRYPTO_AES_KEY'),
-                'hex'
-            );
-            const iv = Buffer.from(
-                this.configService.get<string>('CRYPTO_AES_IV'),
-                'hex'
-            );
+            const key = Buffer.from(this.configService.get<string>('CRYPTO_AES_KEY'), 'hex');
+            const iv = Buffer.from(this.configService.get<string>('CRYPTO_AES_IV'), 'hex');
 
-            const decipher = createDecipheriv(
-                this.configService.get('CRYPTO_ALGORITHM'),
-                key,
-                iv
-            );
+            const decipher = createDecipheriv(this.configService.get('CRYPTO_ALGORITHM'), key, iv);
             const decryptedData = Buffer.concat([
                 decipher.update(Buffer.from(body.authToken, 'hex')),
                 decipher.final(),
@@ -528,44 +486,45 @@ export class AuthService {
             _id: Types.ObjectId.createFromHexString(decoded.id),
             isDeleted: false,
         });
-        if (!checkIfExists?._id)
-            throw new BadRequestException(Messages.USER_MISSING_ERROR);
+        if (!checkIfExists?._id) throw new BadRequestException(Messages.USER_MISSING_ERROR);
 
         if (checkIfExists.resetPasswordToken !== body.authToken) {
             throw new BadRequestException(Messages.INVALID_TOKEN_ERROR);
         }
         const updatePassword = await this.userRepository.updateById(
             { password: body.newPassword, resetPasswordToken: '' },
-            checkIfExists._id
+            checkIfExists._id,
         );
-        if (!updatePassword)
-            throw new BadRequestException(Messages.SOMETHING_WENT_WRONG);
+        if (!updatePassword) throw new BadRequestException(Messages.SOMETHING_WENT_WRONG);
         return { message: Messages.PASSWORD_UPDATE_SUCCESS };
     }
 
     async profileDetails(user: Partial<UserDocument>): Promise<ApiResponse> {
-        const userDetails = await this.userRepository.getUserDetails({ _id: new Types.ObjectId(user._id), isDeleted: false });
+        const userDetails = await this.userRepository.getUserDetails({
+            _id: new Types.ObjectId(user._id),
+            isDeleted: false,
+        });
 
         return { message: 'Profile details retrieved successfully.', data: userDetails };
     }
 
     async userLogout(req: Request): Promise<ApiResponse> {
-
         try {
             const authHeader = req.headers['authorization'];
             const token = authHeader && authHeader.split(' ')[1]; // Removes "Bearer "
 
-            await this.userDeviceRepository.updateByField({
-                'isLoggedOut': true
-            }, {
-                accessToken: token
-            });
+            await this.userDeviceRepository.updateByField(
+                {
+                    isLoggedOut: true,
+                },
+                {
+                    accessToken: token,
+                },
+            );
 
             return { message: Messages.USER_LOGOUT_SUCCESS };
         } catch (error) {
             throw new BadRequestException(Messages.SOMETHING_WENT_WRONG);
         }
-
     }
-
 }

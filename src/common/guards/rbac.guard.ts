@@ -4,7 +4,7 @@ import { Reflector } from '@nestjs/core';
 
 @Injectable()
 export class RBAcGuard implements CanActivate {
-    constructor(private reflector: Reflector) { }
+    constructor(private reflector: Reflector) {}
 
     canActivate(context: ExecutionContext): boolean {
         const roles = this.reflector.get<UserRole[]>('roles', context.getHandler());

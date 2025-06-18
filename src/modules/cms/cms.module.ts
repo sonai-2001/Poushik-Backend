@@ -6,6 +6,6 @@ import { CmsService } from './cms.service';
     imports: [],
     controllers: [CmsController],
     providers: [CmsService],
-    exports: [CmsService]
+    exports: [CmsService],
 })
-export class CmsModule { }
+export class CmsModule {}

@@ -14,10 +14,10 @@ import { RoleRepository } from './role.repository';
                     return schema;
                 },
             },
-        ])
+        ]),
     ],
     controllers: [],
     providers: [RoleRepository],
-    exports: [RoleRepository]
+    exports: [RoleRepository],
 })
 export class RoleRepositoryModule {}

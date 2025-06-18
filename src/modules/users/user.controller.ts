@@ -1,7 +1,29 @@
-import { Body, Controller, Post, UseGuards, Version, UseInterceptors, UploadedFiles, Param, Get, Delete, HttpCode, Patch, ValidationPipe } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Post,
+    UseGuards,
+    Version,
+    UseInterceptors,
+    UploadedFiles,
+    Param,
+    Get,
+    Delete,
+    HttpCode,
+    Patch,
+    ValidationPipe,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
-import { ChangeAdminProfilePasswordDto, ChangePasswordDto, ListingUserDto, SaveUserDTO, StatusUserDto, UpdateAdminProfileDto, UpdateUserDto } from '@modules/users/dto/user.dto';
+import {
+    ChangeAdminProfilePasswordDto,
+    ChangePasswordDto,
+    ListingUserDto,
+    SaveUserDTO,
+    StatusUserDto,
+    UpdateAdminProfileDto,
+    UpdateUserDto,
+} from '@modules/users/dto/user.dto';
 import { SingleFileInterceptor } from '@common/interceptors/files.interceptor';
 import { MongoIdPipe } from '@common/pipes/mongoid.pipe';
 import { UserService } from './user.service';
@@ -14,7 +36,7 @@ import { UserDocument } from './schemas/user.schema';
 @ApiTags('Admin')
 @Controller('admin')
 export class AdminController {
-    constructor(private readonly userService: UserService) { }
+    constructor(private readonly userService: UserService) {}
 
     @Version('1')
     @Patch('profile-update')
@@ -24,7 +46,11 @@ export class AdminController {
     @ApiBearerAuth()
     @ApiConsumes('multipart/form-data')
     @UseInterceptors(SingleFileInterceptor('users', 'profileImage'))
-    async updateUser(@LoginUser() user: Partial<UserDocument>, @Body(new ValidationPipe({ transform: true })) dto: UpdateAdminProfileDto, @UploadedFiles() files: Express.Multer.File[]) {
+    async updateUser(
+        @LoginUser() user: Partial<UserDocument>,
+        @Body(new ValidationPipe({ transform: true })) dto: UpdateAdminProfileDto,
+        @UploadedFiles() files: Express.Multer.File[],
+    ) {
         return this.userService.updateAdminProfile(user, dto, files);
     }
 
@@ -34,18 +60,18 @@ export class AdminController {
     @HttpCode(200)
     @UseGuards(AuthGuard('jwt'), RBAcGuard)
     @ApiBearerAuth()
-    async changePasswordUser(@LoginUser() user: Partial<UserDocument>, @Body() dto: ChangeAdminProfilePasswordDto) {
+    async changePasswordUser(
+        @LoginUser() user: Partial<UserDocument>,
+        @Body() dto: ChangeAdminProfilePasswordDto,
+    ) {
         return this.userService.changeAdminPassword(user, dto);
     }
-
 }
 
 @ApiTags('Admin User')
 @Controller('admin/user')
 export class UserController {
-    constructor(
-        private readonly userService: UserService
-    ) { }
+    constructor(private readonly userService: UserService) {}
 
     @Version('1')
     @Post('getall')
@@ -85,7 +111,11 @@ export class UserController {
     @ApiBearerAuth()
     @ApiConsumes('multipart/form-data')
     @UseInterceptors(SingleFileInterceptor('users', 'profileImage'))
-    async updateUser(@Param('id', new MongoIdPipe()) id: string, @Body(new ValidationPipe({ transform: true })) dto: UpdateUserDto, @UploadedFiles() files: Express.Multer.File[]) {
+    async updateUser(
+        @Param('id', new MongoIdPipe()) id: string,
+        @Body(new ValidationPipe({ transform: true })) dto: UpdateUserDto,
+        @UploadedFiles() files: Express.Multer.File[],
+    ) {
         return this.userService.updateUser(id, dto, files);
     }
 
@@ -105,7 +135,10 @@ export class UserController {
     @UseGuards(AuthGuard('jwt'), RBAcGuard)
     @ApiBearerAuth()
     @HttpCode(200)
-    async changePassword(@Param('id', new MongoIdPipe()) id: string, @Body() dto: ChangePasswordDto) {
+    async changePassword(
+        @Param('id', new MongoIdPipe()) id: string,
+        @Body() dto: ChangePasswordDto,
+    ) {
         return this.userService.changePassword(id, dto);
     }
 
@@ -118,5 +151,4 @@ export class UserController {
     async delete(@Param('id', new MongoIdPipe()) id: string) {
         return this.userService.deleteUser(id);
     }
-
 }

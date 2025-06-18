@@ -5,7 +5,6 @@ import { PaginationResponse } from '@common/types/api-response.type';
 
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 
-
 import { Model, PipelineStage } from 'mongoose';
 
 import { BaseRepository } from '@common/bases/base.repository';
@@ -13,9 +12,7 @@ import { FaqListingDto } from '../dto/faq.dto';
 
 @Injectable()
 export class FaqRepository extends BaseRepository<FaqDocument> {
-    constructor(
-        @InjectModel(Faq.name) private readonly FaqModel: Model<FaqDocument>,
-    ) {
+    constructor(@InjectModel(Faq.name) private readonly FaqModel: Model<FaqDocument>) {
         super(FaqModel);
     }
 
@@ -33,10 +30,7 @@ export class FaqRepository extends BaseRepository<FaqDocument> {
         if (paginatedDto.search) {
             const searchRegex = new RegExp(paginatedDto.search, 'i'); // Case-insensitive search
             and_clauses.push({
-                $or: [
-                    { question: searchRegex },
-                    { answer: searchRegex }
-                ]
+                $or: [{ question: searchRegex }, { answer: searchRegex }],
             });
         }
 
@@ -59,27 +53,30 @@ export class FaqRepository extends BaseRepository<FaqDocument> {
                 $project: {
                     question: 1,
                     createdAt: 1,
-                    status: 1
-                }
+                    status: 1,
+                },
             },
             { $sort: { [sortField]: sortOrder } }, // Dynamic sorting
         ];
 
-        const countPipeline: PipelineStage[] = [
-            { $match: conditions },
-            { $count: 'total' }
-        ];
+        const countPipeline: PipelineStage[] = [{ $match: conditions }, { $count: 'total' }];
 
         // Perform the aggregation
         const [countResult, aggregate] = await Promise.all([
-            this.FaqModel.aggregate(countPipeline, { allowDiskUse: true }).exec()
+            this.FaqModel.aggregate(countPipeline, { allowDiskUse: true })
+                .exec()
                 .catch((error) => {
-                    throw new InternalServerErrorException(`Error during count aggregation: ${error.message}`);
+                    throw new InternalServerErrorException(
+                        `Error during count aggregation: ${error.message}`,
+                    );
                 }),
-            this.FaqModel.aggregate(filterPipeline, { allowDiskUse: true }).exec()
+            this.FaqModel.aggregate(filterPipeline, { allowDiskUse: true })
+                .exec()
                 .catch((error) => {
-                    throw new InternalServerErrorException(`Error during data aggregation: ${error.message}`);
-                })
+                    throw new InternalServerErrorException(
+                        `Error during data aggregation: ${error.message}`,
+                    );
+                }),
         ]);
 
         const totalDocs = countResult.length ? countResult[0].total : 0;
@@ -98,11 +95,10 @@ export class FaqRepository extends BaseRepository<FaqDocument> {
                 limit: limit,
                 hasPrevPage,
                 hasNextPage,
-                prevPage: hasPrevPage ? (page - 1) : null,
-                nextPage: hasNextPage ? (page + 1) : null,
+                prevPage: hasPrevPage ? page - 1 : null,
+                nextPage: hasNextPage ? page + 1 : null,
             },
             docs: aggregate,
         };
     }
-
 }

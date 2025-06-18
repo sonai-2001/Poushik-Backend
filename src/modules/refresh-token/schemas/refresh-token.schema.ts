@@ -1,5 +1,5 @@
-import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Schema as MongoSchema, HydratedDocument, Types } from "mongoose";
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Schema as MongoSchema, HydratedDocument, Types } from 'mongoose';
 
 @Schema({ timestamps: { createdAt: 'createdAt' }, collection: 'refreshTokens' })
 export class RefreshToken {

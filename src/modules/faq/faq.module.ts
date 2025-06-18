@@ -6,6 +6,6 @@ import { FaqService } from './faq.service';
     imports: [],
     controllers: [FaqController],
     providers: [FaqService],
-    exports: [FaqService]
+    exports: [FaqService],
 })
-export class FaqModule { }
+export class FaqModule {}

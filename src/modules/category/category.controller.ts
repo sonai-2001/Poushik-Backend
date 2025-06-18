@@ -22,11 +22,10 @@ import {
 } from '@modules/category/dto/category.dto';
 import { MongoIdPipe } from '@common/pipes/mongoid.pipe';
 
-
 @ApiTags('Category')
 @Controller('admin/category')
 export class CategoryController {
-    constructor(private readonly categoryService: CategoryService) { }
+    constructor(private readonly categoryService: CategoryService) {}
 
     @Version('1')
     @Post('getall')
@@ -59,7 +58,10 @@ export class CategoryController {
     @Patch(':id')
     @UseGuards(AuthGuard('jwt'))
     @ApiBearerAuth()
-    async update(@Param('id', new MongoIdPipe()) id: string, @Body(new ValidationPipe({ transform: true })) dto: UpdateCategoryDto) {
+    async update(
+        @Param('id', new MongoIdPipe()) id: string,
+        @Body(new ValidationPipe({ transform: true })) dto: UpdateCategoryDto,
+    ) {
         return this.categoryService.update(id, dto);
     }
 

@@ -5,35 +5,37 @@ import { FaqListingDto, SaveFaqDto, StatusFaqDto, UpdateFaqDto } from '@modules/
 import { FaqRepository } from '@modules/faq/repositories/faq.repository';
 import { Messages } from '@common/constants/messages';
 
-
 @Injectable()
 export class FaqService {
-    constructor(
-        private readonly faqRepository: FaqRepository,
-    ) { }
-
+    constructor(private readonly faqRepository: FaqRepository) {}
 
     async getAll(body: FaqListingDto): Promise<ApiResponse> {
         const getAllFaqs = await this.faqRepository.getAllPaginate(body);
         return { message: 'FAQ data fetched successfully.', data: getAllFaqs };
     }
 
-
     async save(body: SaveFaqDto): Promise<ApiResponse> {
-        const existingFaq = await this.faqRepository.getByField({ question: body.question, isDeleted: false });
+        const existingFaq = await this.faqRepository.getByField({
+            question: body.question,
+            isDeleted: false,
+        });
         if (existingFaq) throw new BadRequestException('FAQ question already exists!');
 
         const saveFaq = await this.faqRepository.save(body);
         if (!saveFaq) {
-            throw new BadRequestException(saveFaq instanceof Error ? saveFaq.message : 'Something went wrong!');
+            throw new BadRequestException(
+                saveFaq instanceof Error ? saveFaq.message : 'Something went wrong!',
+            );
         }
 
         return { message: 'FAQ saved successfully.' };
     }
 
-
     async get(id: string): Promise<ApiResponse> {
-        const faq = await this.faqRepository.getByField({ _id: new mongoose.Types.ObjectId(id), isDeleted: false });
+        const faq = await this.faqRepository.getByField({
+            _id: new mongoose.Types.ObjectId(id),
+            isDeleted: false,
+        });
         if (!faq) throw new NotFoundException('FAQ not found!');
 
         const faqObj = faq.toObject();
@@ -42,19 +44,25 @@ export class FaqService {
         return { message: 'FAQ retrieved successfully.', data: faqObj };
     }
 
-
     async update(id: string, body: UpdateFaqDto): Promise<ApiResponse> {
-        const existingFaq = await this.faqRepository.getByField({ question: body.question, isDeleted: false, _id: { $ne: new Types.ObjectId(id) } });
+        const existingFaq = await this.faqRepository.getByField({
+            question: body.question,
+            isDeleted: false,
+            _id: { $ne: new Types.ObjectId(id) },
+        });
 
         if (existingFaq) throw new BadRequestException('FAQ question already exists!');
 
         const updatedValue = {
             question: body.question,
-            answer: body.answer
-        }
+            answer: body.answer,
+        };
 
         const update = await this.faqRepository.updateById(updatedValue, new Types.ObjectId(id));
-        if (!update) throw new BadRequestException(update instanceof Error ? update : Messages.SOMETHING_WENT_WRONG);
+        if (!update)
+            throw new BadRequestException(
+                update instanceof Error ? update : Messages.SOMETHING_WENT_WRONG,
+            );
 
         const faqObj = update.toObject();
         delete faqObj.isDeleted;
@@ -62,21 +70,25 @@ export class FaqService {
         return { message: 'FAQ updated successfully.', data: faqObj };
     }
 
-
     async delete(id: string): Promise<ApiResponse> {
         const delData = await this.faqRepository.updateById({ isDeleted: true }, id);
-        if (!delData) throw new BadRequestException(delData instanceof Error ? delData : Messages.SOMETHING_WENT_WRONG);
+        if (!delData)
+            throw new BadRequestException(
+                delData instanceof Error ? delData : Messages.SOMETHING_WENT_WRONG,
+            );
         return { message: 'FAQ deleted successfully.' };
     }
 
     async statusUpdate(id: string, body: StatusFaqDto): Promise<ApiResponse> {
         const update = await this.faqRepository.updateById(body, new Types.ObjectId(id));
-        if (!update) throw new BadRequestException(update instanceof Error ? update : Messages.SOMETHING_WENT_WRONG);
+        if (!update)
+            throw new BadRequestException(
+                update instanceof Error ? update : Messages.SOMETHING_WENT_WRONG,
+            );
 
         const faqObj = update.toObject();
         delete faqObj.isDeleted;
 
         return { message: 'FAQ Status updated successfully.', data: faqObj };
     }
-
 }

@@ -7,11 +7,15 @@ import SMTPTransport from 'nodemailer/lib/smtp-transport';
 
 @Injectable()
 export class MailerService {
-    constructor(
-        private readonly configService: ConfigService
-    ) { }
+    constructor(private readonly configService: ConfigService) {}
 
-    async sendMail(from: string, to: string | string[], subject: string, tplName: string, locals: any): Promise<SMTPTransport.SentMessageInfo> {
+    async sendMail(
+        from: string,
+        to: string | string[],
+        subject: string,
+        tplName: string,
+        locals: any,
+    ): Promise<SMTPTransport.SentMessageInfo> {
         const templateDir = resolve('./views/', 'email-templates', tplName, 'html');
         const email = new Email({
             views: {

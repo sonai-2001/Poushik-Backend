@@ -8,10 +8,7 @@ export class WinstonLoggerService {
     private readonly logger: Logger;
 
     constructor() {
-        const defaultFormat = format.combine(
-            format.timestamp(),
-            format.json()
-        );
+        const defaultFormat = format.combine(format.timestamp(), format.json());
 
         /* for handling all error and debug related logs */
         this.logger = createLogger({

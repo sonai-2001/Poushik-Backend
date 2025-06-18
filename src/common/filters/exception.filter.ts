@@ -16,19 +16,22 @@ export class CustomExceptionFilter implements ExceptionFilter {
     catch(exception: HttpException, host: ArgumentsHost) {
         const ctx = host.switchToHttp();
         const response = ctx.getResponse<Response>();
-        const exceptionStatus = (exception.getStatus && exception.getStatus()) || HttpStatus.INTERNAL_SERVER_ERROR
+        const exceptionStatus =
+            (exception.getStatus && exception.getStatus()) || HttpStatus.INTERNAL_SERVER_ERROR;
 
         const data: any = {
             statusCode: exceptionStatus,
             message: exception?.message || exception,
-            stack: this.configService.get('NODE_ENV') == 'development' ? exception.stack : null
-        }
+            stack: this.configService.get('NODE_ENV') == 'development' ? exception.stack : null,
+        };
 
         switch (exceptionStatus) {
         case HttpStatus.BAD_REQUEST:
             const exceptionResponse = exception.getResponse();
             if (typeof exceptionResponse === 'object' && 'message' in exceptionResponse) {
-                const messages = Array.isArray(exceptionResponse['message']) ? exceptionResponse['message'] : [exceptionResponse['message']];
+                const messages = Array.isArray(exceptionResponse['message'])
+                    ? exceptionResponse['message']
+                    : [exceptionResponse['message']];
                 data.message = messages[0];
             }
             break;

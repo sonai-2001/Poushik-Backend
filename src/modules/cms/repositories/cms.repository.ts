@@ -5,7 +5,6 @@ import { PaginationResponse } from '@common/types/api-response.type';
 
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 
-
 import { Model, PipelineStage } from 'mongoose';
 
 import { BaseRepository } from '@common/bases/base.repository';
@@ -13,9 +12,7 @@ import { CmsListingDto } from '../dto/cms.dto';
 
 @Injectable()
 export class CmsRepository extends BaseRepository<CmsDocument> {
-    constructor(
-        @InjectModel(Cms.name) private readonly CmsModel: Model<CmsDocument>,
-    ) {
+    constructor(@InjectModel(Cms.name) private readonly CmsModel: Model<CmsDocument>) {
         super(CmsModel);
     }
 
@@ -33,9 +30,7 @@ export class CmsRepository extends BaseRepository<CmsDocument> {
         if (paginatedDto.search) {
             const searchRegex = new RegExp(paginatedDto.search, 'i'); // Case-insensitive search
             and_clauses.push({
-                $or: [
-                    { title: searchRegex }
-                ]
+                $or: [{ title: searchRegex }],
             });
         }
 
@@ -59,31 +54,34 @@ export class CmsRepository extends BaseRepository<CmsDocument> {
                     title: 1,
                     slug: 1,
                     createdAt: 1,
-                    status: 1
-                }
+                    status: 1,
+                },
             },
             { $sort: { [sortField]: sortOrder } }, // Dynamic sorting
         ];
 
-        const countPipeline: PipelineStage[] = [
-            { $match: conditions },
-            { $count: 'total' }
-        ];
+        const countPipeline: PipelineStage[] = [{ $match: conditions }, { $count: 'total' }];
 
         // Perform the aggregation
         const [countResult, aggregate] = await Promise.all([
-            this.CmsModel.aggregate(countPipeline, { allowDiskUse: true }).exec()
+            this.CmsModel.aggregate(countPipeline, { allowDiskUse: true })
+                .exec()
                 .catch((error) => {
-                    throw new InternalServerErrorException(`Error during count aggregation: ${error.message}`);
+                    throw new InternalServerErrorException(
+                        `Error during count aggregation: ${error.message}`,
+                    );
                 }),
-            this.CmsModel.aggregate(filterPipeline, { allowDiskUse: true }).exec()
+            this.CmsModel.aggregate(filterPipeline, { allowDiskUse: true })
+                .exec()
                 .catch((error) => {
-                    throw new InternalServerErrorException(`Error during data aggregation: ${error.message}`);
-                })
+                    throw new InternalServerErrorException(
+                        `Error during data aggregation: ${error.message}`,
+                    );
+                }),
         ]);
 
         const totalDocs = countResult.length ? countResult[0].total : 0;
-        const hasNextPage = totalDocs > 0 && (totalDocs - (skip + aggregate.length) > 0);
+        const hasNextPage = totalDocs > 0 && totalDocs - (skip + aggregate.length) > 0;
         const hasPrevPage = page != 1;
         const totalPages = Math.ceil(totalDocs / limit);
 
@@ -96,11 +94,10 @@ export class CmsRepository extends BaseRepository<CmsDocument> {
                 limit: limit,
                 hasPrevPage,
                 hasNextPage,
-                prevPage: hasPrevPage ? (page - 1) : null,
-                nextPage: hasNextPage ? (page + 1) : null,
+                prevPage: hasPrevPage ? page - 1 : null,
+                nextPage: hasNextPage ? page + 1 : null,
             },
             docs: aggregate,
         };
     }
-
 }

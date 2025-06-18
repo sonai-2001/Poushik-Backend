@@ -6,7 +6,6 @@ import { existsSync, mkdirSync, unlink } from 'fs';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 
-
 export const allowedMimeTypes = ['image/jpeg', 'image/png', 'application/pdf', 'text/csv'];
 const allowedExtensions = ['.jpeg', '.jpg', '.png', '.gif', '.pdf'];
 
@@ -41,7 +40,10 @@ export const SingleFileInterceptor = (directory: string, fieldName: string) =>
         }),
         fileFilter(_req, file, callback) {
             if (!allowedMimeTypes.includes(file.mimetype)) {
-                return callback(new BadRequestException(`Unsupported file type: ${file.mimetype}.`), false);
+                return callback(
+                    new BadRequestException(`Unsupported file type: ${file.mimetype}.`),
+                    false,
+                );
             }
 
             const ext = extname(file.originalname).toLowerCase();
@@ -53,36 +55,47 @@ export const SingleFileInterceptor = (directory: string, fieldName: string) =>
         },
     });
 
-
 /**
  * @description Interceptor for handling multiple field file uploads with custom directories.
  * @description Use type example { fieldname: Express.Multer.Files[] }
  */
-export const MultiFileInterceptor = (fileFields: { name: string, directory: string, maxCount?: number }[]) => FileFieldsInterceptor(
-    fileFields,
-    {
+export const MultiFileInterceptor = (
+    fileFields: { name: string; directory: string; maxCount?: number }[],
+) =>
+    FileFieldsInterceptor(fileFields, {
         storage: diskStorage({
             destination(_req: Request, file: Express.Multer.File, callback) {
-                const currField = fileFields.find(field => file.fieldname === field.name);
+                const currField = fileFields.find((field) => file.fieldname === field.name);
 
                 if (!existsSync('./public')) mkdirSync('./public');
                 if (!existsSync('./public/uploads')) mkdirSync('./public/uploads');
-                if (!existsSync(`./public/uploads/${currField.directory}`)) mkdirSync(`./public/uploads/${currField.directory}`);
+                if (!existsSync(`./public/uploads/${currField.directory}`))
+                    mkdirSync(`./public/uploads/${currField.directory}`);
 
-                if (currField) { return callback(null, `./public/uploads/${currField.directory}`); }
+                if (currField) {
+                    return callback(null, `./public/uploads/${currField.directory}`);
+                }
 
                 unlink(file.destination, (_err) => {
-                    if(_err) callback(_err, null);
-                    return callback(new BadRequestException(`Image fieldname not allowed: ${file.fieldname}. Please ensure the fieldname matches one of the specified fields.`), null);
-                })
+                    if (_err) callback(_err, null);
+                    return callback(
+                        new BadRequestException(
+                            `Image fieldname not allowed: ${file.fieldname}. Please ensure the fieldname matches one of the specified fields.`,
+                        ),
+                        null,
+                    );
+                });
             },
             filename(_req, file, callback) {
                 return callback(null, normalizeFilename(file.originalname));
-            }
+            },
         }),
         fileFilter(_req, file, callback) {
             if (!allowedMimeTypes.includes(file.mimetype)) {
-                return callback(new BadRequestException(`Unsupported file type: ${file.mimetype}.`), false);
+                return callback(
+                    new BadRequestException(`Unsupported file type: ${file.mimetype}.`),
+                    false,
+                );
             }
 
             const ext = extname(file.originalname).toLowerCase();
@@ -91,5 +104,5 @@ export const MultiFileInterceptor = (fileFields: { name: string, directory: stri
             }
 
             return callback(null, true);
-        }
+        },
     });

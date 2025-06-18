@@ -5,12 +5,8 @@ import { RefreshTokenRepository } from './repository/refresh-token.repository';
 
 @Global()
 @Module({
-    imports: [
-        MongooseModule.forFeature([
-            { name: RefreshToken.name, schema: RefreshTokenSchema }
-        ])
-    ],
+    imports: [MongooseModule.forFeature([{ name: RefreshToken.name, schema: RefreshTokenSchema }])],
     providers: [RefreshTokenRepository],
-    exports: [RefreshTokenRepository]
+    exports: [RefreshTokenRepository],
 })
-export class RefreshTokenModule { }
+export class RefreshTokenModule {}

@@ -14,10 +14,10 @@ import { CategoryRepository } from './category.repository';
                     return schema;
                 },
             },
-        ])
+        ]),
     ],
     controllers: [],
     providers: [CategoryRepository],
-    exports: [CategoryRepository]
+    exports: [CategoryRepository],
 })
 export class CategoryRepositoryModule {}

@@ -17,8 +17,9 @@ export const Messages = {
     USER_DATA_FETCH_SUCCESS: 'User data fetched successfully',
     PROFILE_UPDATE_SUCCESS: 'Profile updated successfully',
 
-    FORGOT_PASSWORD_SUCCESS: 'If your email address exists in our database, you will receive a password recovery link at your email address in a few minutes.',
+    FORGOT_PASSWORD_SUCCESS:
+        'If your email address exists in our database, you will receive a password recovery link at your email address in a few minutes.',
     PASSWORD_UPDATE_SUCCESS: 'Password updated successfully.',
 
     SOMETHING_WENT_WRONG: 'Something went wrong!',
-}
+};

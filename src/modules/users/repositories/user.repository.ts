@@ -8,9 +8,7 @@ import { PaginationResponse } from '@common/types/api-response.type';
 
 @Injectable()
 export class UserRepository extends BaseRepository<UserDocument> {
-    constructor(
-        @InjectModel(User.name) private readonly UserModel: Model<UserDocument>,
-    ) {
+    constructor(@InjectModel(User.name) private readonly UserModel: Model<UserDocument>) {
         super(UserModel);
     }
 
@@ -29,11 +27,11 @@ export class UserRepository extends BaseRepository<UserDocument> {
                             $project: {
                                 _id: 0,
                                 role: '$role',
-                                roleDisplayName: '$roleDisplayName'
-                            }
-                        }
-                    ]
-                }
+                                roleDisplayName: '$roleDisplayName',
+                            },
+                        },
+                    ],
+                },
             },
             { $unwind: '$role' },
             {
@@ -49,8 +47,8 @@ export class UserRepository extends BaseRepository<UserDocument> {
                     profileImage: '$profileImage',
                     status: '$status',
                     isDeleted: '$isDeleted',
-                }
-            }
+                },
+            },
         ]);
 
         if (!user?.length) return null;
@@ -72,22 +70,20 @@ export class UserRepository extends BaseRepository<UserDocument> {
                         {
                             $match: {
                                 $expr: {
-                                    $and: [
-                                        { $eq: ['$_id', '$$role'] }
-                                    ]
-                                }
-                            }
+                                    $and: [{ $eq: ['$_id', '$$role'] }],
+                                },
+                            },
                         },
                         {
                             $project: {
                                 _id: '$_id',
                                 role: '$role',
-                                roleDisplayName: '$roleDisplayName'
-                            }
-                        }
+                                roleDisplayName: '$roleDisplayName',
+                            },
+                        },
                     ],
-                    as: 'role'
-                }
+                    as: 'role',
+                },
             },
             { $unwind: '$role' },
             {
@@ -98,15 +94,17 @@ export class UserRepository extends BaseRepository<UserDocument> {
                     countryCode: 0,
                     phone: 0,
                     emailOtp: 0,
-                    otpExpireTime: 0
-                }
-            }
+                    otpExpireTime: 0,
+                },
+            },
         ]);
         if (!aggregate?.length) return null;
         return aggregate[0];
     }
 
-    async getAllPaginateAdmin(paginatedDto: ListingUserDto): Promise<PaginationResponse<UserDocument>> {
+    async getAllPaginateAdmin(
+        paginatedDto: ListingUserDto,
+    ): Promise<PaginationResponse<UserDocument>> {
         const conditions = {};
         const and_clauses = [];
         const page = paginatedDto.page || 1;
@@ -116,11 +114,7 @@ export class UserRepository extends BaseRepository<UserDocument> {
         if (paginatedDto.search) {
             const searchRegex = new RegExp(paginatedDto.search, 'i');
             and_clauses.push({
-                $or: [
-                    { fullName: searchRegex },
-                    { email: searchRegex },
-                    { userName: searchRegex }
-                ]
+                $or: [{ fullName: searchRegex }, { email: searchRegex }, { userName: searchRegex }],
             });
         }
 
@@ -149,16 +143,14 @@ export class UserRepository extends BaseRepository<UserDocument> {
                     localField: 'role',
                     foreignField: '_id',
                     as: 'role',
-                    pipeline: [
-                        { $match: { isDeleted: false, role: { $ne: 'admin' } } }
-                    ]
-                }
+                    pipeline: [{ $match: { isDeleted: false, role: { $ne: 'admin' } } }],
+                },
             },
             {
                 $unwind: {
                     // preserveNullAndEmptyArrays: true,
-                    path: '$role'
-                }
+                    path: '$role',
+                },
             },
             {
                 $project: {
@@ -167,31 +159,33 @@ export class UserRepository extends BaseRepository<UserDocument> {
                     userName: 1,
                     profileImage: 1,
                     createdAt: 1,
-                    status: 1
-                }
+                    status: 1,
+                },
             },
             { $sort: { [sortField]: sortOrder } }, // Dynamic sorting
         ];
 
-        const countPipeline: PipelineStage[] = [
-            { $match: conditions },
-            { $count: 'total' }
-        ];
+        const countPipeline: PipelineStage[] = [{ $match: conditions }, { $count: 'total' }];
 
         // Perform the aggregation
         const [countResult, aggregate] = await Promise.all([
-            this.UserModel.aggregate(countPipeline, { allowDiskUse: true }).exec()
+            this.UserModel.aggregate(countPipeline, { allowDiskUse: true })
+                .exec()
                 .catch((error) => {
-                    throw new InternalServerErrorException(`Error during count aggregation: ${error.message}`);
+                    throw new InternalServerErrorException(
+                        `Error during count aggregation: ${error.message}`,
+                    );
                 }),
-            this.UserModel.aggregate(filterPipeline, { allowDiskUse: true }).exec()
+            this.UserModel.aggregate(filterPipeline, { allowDiskUse: true })
+                .exec()
                 .catch((error) => {
-                    throw new InternalServerErrorException(`Error during data aggregation: ${error.message}`);
-                })
+                    throw new InternalServerErrorException(
+                        `Error during data aggregation: ${error.message}`,
+                    );
+                }),
         ]);
 
         console.log({ aggregate });
-
 
         const totalDocs = countResult.length ? countResult[0].total : 0;
         const hasMoreDocs = totalDocs > 0;
@@ -209,15 +203,16 @@ export class UserRepository extends BaseRepository<UserDocument> {
                 limit: limit,
                 hasPrevPage,
                 hasNextPage,
-                prevPage: hasPrevPage ? (page - 1) : null,
-                nextPage: hasNextPage ? (page + 1) : null,
+                prevPage: hasPrevPage ? page - 1 : null,
+                nextPage: hasNextPage ? page + 1 : null,
             },
             docs: aggregate,
         };
     }
 
-
-    async getAllPaginateFrontend(paginatedDto: ListingUserDto): Promise<PaginationResponse<UserDocument>> {
+    async getAllPaginateFrontend(
+        paginatedDto: ListingUserDto,
+    ): Promise<PaginationResponse<UserDocument>> {
         const conditions = {};
         const and_clauses = [];
         const page = paginatedDto.page || 1;
@@ -228,11 +223,7 @@ export class UserRepository extends BaseRepository<UserDocument> {
         if (paginatedDto.search) {
             const searchRegex = new RegExp(paginatedDto.search, 'i'); // Case-insensitive search
             and_clauses.push({
-                $or: [
-                    { fullName: searchRegex },
-                    { email: searchRegex },
-                    { userName: searchRegex }
-                ]
+                $or: [{ fullName: searchRegex }, { email: searchRegex }, { userName: searchRegex }],
             });
         }
 
@@ -258,27 +249,30 @@ export class UserRepository extends BaseRepository<UserDocument> {
                     userName: 1,
                     profileImage: 1,
                     createdAt: 1,
-                    status: 1
-                }
+                    status: 1,
+                },
             },
             { $sort: { [sortField]: sortOrder } }, // Dynamic sorting
         ];
 
-        const countPipeline: PipelineStage[] = [
-            { $match: conditions },
-            { $count: 'total' }
-        ];
+        const countPipeline: PipelineStage[] = [{ $match: conditions }, { $count: 'total' }];
 
         // Perform the aggregation
         const [countResult, aggregate] = await Promise.all([
-            this.UserModel.aggregate(countPipeline, { allowDiskUse: true }).exec()
+            this.UserModel.aggregate(countPipeline, { allowDiskUse: true })
+                .exec()
                 .catch((error) => {
-                    throw new InternalServerErrorException(`Error during count aggregation: ${error.message}`);
+                    throw new InternalServerErrorException(
+                        `Error during count aggregation: ${error.message}`,
+                    );
                 }),
-            this.UserModel.aggregate(filterPipeline, { allowDiskUse: true }).exec()
+            this.UserModel.aggregate(filterPipeline, { allowDiskUse: true })
+                .exec()
                 .catch((error) => {
-                    throw new InternalServerErrorException(`Error during data aggregation: ${error.message}`);
-                })
+                    throw new InternalServerErrorException(
+                        `Error during data aggregation: ${error.message}`,
+                    );
+                }),
         ]);
 
         const totalDocs = countResult.length ? countResult[0].total : 0;
@@ -297,11 +291,10 @@ export class UserRepository extends BaseRepository<UserDocument> {
                 limit: limit,
                 hasPrevPage,
                 hasNextPage,
-                prevPage: hasPrevPage ? (page - 1) : null,
-                nextPage: hasNextPage ? (page + 1) : null,
+                prevPage: hasPrevPage ? page - 1 : null,
+                nextPage: hasNextPage ? page + 1 : null,
             },
             docs: aggregate,
         };
     }
-
 }

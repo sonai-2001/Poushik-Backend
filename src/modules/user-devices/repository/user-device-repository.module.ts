@@ -5,12 +5,8 @@ import { UserDevice, UserDeviceSchema } from '../schemas/user-device.schema';
 
 @Global()
 @Module({
-    imports: [
-        MongooseModule.forFeature([
-            { name: UserDevice.name, schema: UserDeviceSchema }
-        ])
-    ],
+    imports: [MongooseModule.forFeature([{ name: UserDevice.name, schema: UserDeviceSchema }])],
     providers: [UserDeviceRepository],
-    exports: [UserDeviceRepository]
+    exports: [UserDeviceRepository],
 })
-export class UserDeviceRepositoryModule { }
+export class UserDeviceRepositoryModule {}

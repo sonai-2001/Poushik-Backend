@@ -5,11 +5,9 @@ import { CmsRepository } from './cms.repository';
 
 @Global()
 @Module({
-    imports: [
-        MongooseModule.forFeature([{ name: Cms.name, schema: CmsSchema }])
-    ],
+    imports: [MongooseModule.forFeature([{ name: Cms.name, schema: CmsSchema }])],
     controllers: [],
     providers: [CmsRepository],
-    exports: [CmsRepository]
+    exports: [CmsRepository],
 })
 export class CmsRepositoryModule {}

@@ -13,9 +13,12 @@ import { CustomExceptionFilter } from './common/filters/exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 
 async function bootstrap() {
-
     const env = process.env.NODE_ENV || 'development';
-    console.info('\x1b[36m%s\x1b[0m', '🚀 Bootstrap:', `Starting application in [${env.toUpperCase()}] mode`);
+    console.info(
+        '\x1b[36m%s\x1b[0m',
+        '🚀 Bootstrap:',
+        `Starting application in [${env.toUpperCase()}] mode`,
+    );
     console.info('\x1b[32m%s\x1b[0m', '🔧 Node Version:', process.version);
 
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -28,9 +31,11 @@ async function bootstrap() {
         credentials: true,
     });
     app.use(compression());
-    app.use(helmet({
-        crossOriginResourcePolicy: false
-    }));
+    app.use(
+        helmet({
+            crossOriginResourcePolicy: false,
+        }),
+    );
 
     // Apply global pipes, interceptors, and filters
     app.setGlobalPrefix('/api');
@@ -76,7 +81,11 @@ async function bootstrap() {
                 paths: Object.fromEntries(
                     Object.entries(documentAdmin.paths).filter(
                         ([key]) =>
-                            key.includes('admin') || (key.includes('auth') && !key.includes('register') && !key.includes('login-user') && !key.includes('logout-user')),
+                            key.includes('admin') ||
+                            (key.includes('auth') &&
+                                !key.includes('register') &&
+                                !key.includes('login-user') &&
+                                !key.includes('logout-user')),
                     ),
                 ),
             },
@@ -95,7 +104,10 @@ async function bootstrap() {
                 paths: Object.fromEntries(
                     Object.entries(documentApi.paths).filter(
                         ([key]) =>
-                            !key.includes('admin') || (key.includes('auth') && !key.includes('login-admin') && !key.includes('logout-admin')),
+                            !key.includes('admin') ||
+                            (key.includes('auth') &&
+                                !key.includes('login-admin') &&
+                                !key.includes('logout-admin')),
                     ),
                 ),
             },
@@ -108,7 +120,9 @@ async function bootstrap() {
     }
 
     await app.listen(configService.getOrThrow('PORT'), () => {
-        logger.debug(`[${configService.get('PROJECT_NAME')} | ${configService.get('NODE_ENV')}] is running: http://127.0.0.1:${configService.get('PORT')}/apidoc/v1`)
+        logger.debug(
+            `[${configService.get('PROJECT_NAME')} | ${configService.get('NODE_ENV')}] is running: http://127.0.0.1:${configService.get('PORT')}/apidoc/v1`,
+        );
     });
 }
 

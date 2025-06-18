@@ -1,9 +1,9 @@
-import { randomInt } from 'crypto'
+import { randomInt } from 'crypto';
 
-const digits = '0123456789'
-const lowerCaseAlphabets = 'abcdefghijklmnopqrstuvwxyz'
-const upperCaseAlphabets = lowerCaseAlphabets.toUpperCase()
-const specialChars = '#!&@'
+const digits = '0123456789';
+const lowerCaseAlphabets = 'abcdefghijklmnopqrstuvwxyz';
+const upperCaseAlphabets = lowerCaseAlphabets.toUpperCase();
+const specialChars = '#!&@';
 
 type GenerateOptions = {
     digits?: boolean;
@@ -29,7 +29,11 @@ const generate = (length: number = 10, options: GenerateOptions = {}): string =>
     let password = '';
     while (password.length < length) {
         const charIndex = randomInt(0, allowsChars.length);
-        if (password.length === 0 && generateOptions.digits === true && allowsChars[charIndex] === '0') {
+        if (
+            password.length === 0 &&
+            generateOptions.digits === true &&
+            allowsChars[charIndex] === '0'
+        ) {
             continue;
         }
         password += allowsChars[charIndex];
@@ -39,5 +43,5 @@ const generate = (length: number = 10, options: GenerateOptions = {}): string =>
 };
 
 export default {
-    generate
+    generate,
 };
