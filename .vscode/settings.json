@@ -1,21 +1,22 @@
 {
-    // Run auto-fixes (like ESLint) on save
-    "editor.codeActionsOnSave": {
-      "source.fixAll": "explicit",
-      "source.fixAll.eslint": "explicit"
-    },
-  
-    // Use ESLint as the default formatter
-    "editor.defaultFormatter": "dbaeumer.vscode-eslint",
-    "editor.formatOnSave": false, // disable VS Code’s default formatter
-  
-    // Enable ESLint validation for TS and JS
-    "eslint.validate": ["typescript", "javascript"],
-  
-    // Required if using eslint.config.mjs (Flat Config)
-    "eslint.experimental.useFlatConfig": true,
-  
-    // Optional: show Prettier warnings as ESLint errors
-    "prettier.requireConfig": true
-  }
-  
+  // ✅ Auto-fix ESLint + Prettier issues on save
+  "editor.codeActionsOnSave": {
+    "source.fixAll": true,
+    "source.fixAll.eslint": true
+  },
+
+  // ✅ Set ESLint as default formatter
+  "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+
+  // ✅ Enable formatting on save (using ESLint + Prettier)
+  "editor.formatOnSave": true,
+
+  // ✅ Enable ESLint for both TS and JS files
+  "eslint.validate": ["typescript", "javascript"],
+
+  // ✅ Required for Flat Config support (like eslint.config.mjs)
+  "eslint.experimental.useFlatConfig": true,
+
+  // ✅ Require Prettier config file for consistency
+  "prettier.requireConfig": true
+}

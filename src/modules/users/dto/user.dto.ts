@@ -218,7 +218,7 @@ export class Step2SellerDTO {
 
     @ApiProperty({ example: '+1-202-555-0155' })
     @IsString()
-    phone: string;
+phone: string;
 
     @ApiProperty({ example: 'Paw Supplies Store' })
     @IsString()
