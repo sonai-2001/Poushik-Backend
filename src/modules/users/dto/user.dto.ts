@@ -220,9 +220,7 @@ export class Step2SellerDTO {
   @IsString()
   businessLicense: string;
 
-  @ApiProperty({ example: 'Pet Toys and Accessories' })
-  @IsString()
-  productCategory: string;
+
 
   @ApiProperty({
     type: 'string',
