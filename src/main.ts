@@ -31,18 +31,13 @@ async function bootstrap() {
         credentials: true,
     });
     app.use(compression());
-    app.use(
-        helmet({
-            crossOriginResourcePolicy: false,
-        }),
-    );
+    app.use(helmet({ crossOriginResourcePolicy: false }));
 
-    // Apply global pipes, interceptors, and filters
     app.setGlobalPrefix('/api');
     app.enableVersioning();
-    app.useGlobalPipes(new ApiValidationPipe()); // For validating incoming data
-    app.useGlobalInterceptors(new ResponseInterceptor()); // Intercept outgoing responses
-    app.useGlobalFilters(new CustomExceptionFilter()); // Handle exceptions
+    app.useGlobalPipes(new ApiValidationPipe());
+    app.useGlobalInterceptors(new ResponseInterceptor());
+    app.useGlobalFilters(new CustomExceptionFilter());
 
     app.useStaticAssets(resolve('./public'));
     app.setBaseViewsDir(resolve('./views'));
@@ -61,17 +56,17 @@ async function bootstrap() {
 
     const configAdmin = createConfig(
         'Admin panel API',
-        'The Admin panel API. <br><br> API endpoints for Frontend application API. <br> <a  href="/apidoc/v1/user"> Frontend application API-Doc </a>',
+        'The Admin panel API. <br><br> API endpoints for Frontend application API. <br> <a href="/apidoc/v1/user"> Frontend application API-Doc </a>',
     );
     const configApi = createConfig(
         'Frontend application API',
-        'The User API. <br><br> API endpoints for Admin panel API. <br> <a  href="/apidoc/v1"> Admin panel API-Doc </a>',
+        'The User API. <br><br> API endpoints for Admin panel API. <br> <a href="/apidoc/v1"> Admin panel API-Doc </a>',
     );
 
     const documentAdmin = SwaggerModule.createDocument(app, configAdmin);
     const documentApi = SwaggerModule.createDocument(app, configApi);
 
-    // Admin APIDoc URL
+    // Admin Swagger
     SwaggerModule.setup(
         'apidoc/v1',
         app,
@@ -90,11 +85,13 @@ async function bootstrap() {
         },
         {
             swaggerOptions: {
-                defaultModelsExpandDepth: -1, // Hides the Schemas section
+                defaultModelsExpandDepth: -1,
             },
+            useGlobalPrefix: false, // ✅ FIX
         },
     );
-    // User APIDoc URL
+
+    // User Swagger
     SwaggerModule.setup(
         'apidoc/v1/user',
         app,
@@ -112,14 +109,15 @@ async function bootstrap() {
         },
         {
             swaggerOptions: {
-                defaultModelsExpandDepth: -1, // Hides the Schemas section
+                defaultModelsExpandDepth: -1,
             },
+            useGlobalPrefix: false, // ✅ FIX
         },
     );
 
     await app.listen(configService.getOrThrow('PORT'), () => {
         logger.debug(
-            `[${configService.get('PROJECT_NAME')} | ${configService.get('NODE_ENV')}] is running: http://127.0.0.1:${configService.get('PORT')}/apidoc/v1`,
+            `[${configService.get('PROJECT_NAME')} | ${configService.get('NODE_ENV')}] is running: ${configService.get('BACKEND_URL')}/apidoc/v1`,
         );
     });
 }
