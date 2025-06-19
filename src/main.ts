@@ -78,30 +78,63 @@ async function bootstrap() {
     const documentApi = SwaggerModule.createDocument(app, configApi);
 
     // Admin Swagger UI
-    SwaggerModule.setup('apidoc/v1', app, documentAdmin, {
-        swaggerOptions: {
-            defaultModelsExpandDepth: -1,
-            customCssUrl: '/apidoc-assets/swagger-ui.css',
+    SwaggerModule.setup(
+        'apidoc/v1',
+        app,
+        {
+            ...documentAdmin,
+            paths: Object.fromEntries(
+                Object.entries(documentAdmin.paths).filter(
+                    ([key]) =>
+                        key.includes('admin') ||
+                        (key.includes('auth') &&
+                            !key.includes('register') &&
+                            !key.includes('login-user') &&
+                            !key.includes('logout-user')),
+                ),
+            ),
         },
-        customJs: [
-            '/apidoc-assets/swagger-ui-bundle.js',
-            '/apidoc-assets/swagger-ui-standalone-preset.js',
-        ],
-        useGlobalPrefix: false,
-    });
+        {
+            swaggerOptions: {
+                defaultModelsExpandDepth: -1,
+                customCssUrl: '/apidoc-assets/swagger-ui.css',
+            },
+            customJs: [
+                '/apidoc-assets/swagger-ui-bundle.js',
+                '/apidoc-assets/swagger-ui-standalone-preset.js',
+            ],
+            useGlobalPrefix: false,
+        },
+    );
 
     // User Swagger UI
-    SwaggerModule.setup('apidoc/v1/user', app, documentApi, {
-        swaggerOptions: {
-            defaultModelsExpandDepth: -1,
-            customCssUrl: '/apidoc-assets/swagger-ui.css',
+    SwaggerModule.setup(
+        'apidoc/v1/user',
+        app,
+        {
+            ...documentApi,
+            paths: Object.fromEntries(
+                Object.entries(documentApi.paths).filter(
+                    ([key]) =>
+                        !key.includes('admin') ||
+                        (key.includes('auth') &&
+                            !key.includes('login-admin') &&
+                            !key.includes('logout-admin')),
+                ),
+            ),
         },
-        customJs: [
-            '/apidoc-assets/swagger-ui-bundle.js',
-            '/apidoc-assets/swagger-ui-standalone-preset.js',
-        ],
-        useGlobalPrefix: false,
-    });
+        {
+            swaggerOptions: {
+                defaultModelsExpandDepth: -1,
+                customCssUrl: '/apidoc-assets/swagger-ui.css',
+            },
+            customJs: [
+                '/apidoc-assets/swagger-ui-bundle.js',
+                '/apidoc-assets/swagger-ui-standalone-preset.js',
+            ],
+            useGlobalPrefix: false,
+        },
+    );
 
     await app.listen(configService.getOrThrow('PORT'), () => {
         logger.debug(
