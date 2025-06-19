@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import compression from 'compression';
-import { resolve } from 'path';
+import { resolve, join } from 'path';
 
 import { AppModule } from './app.module';
 import { ApiValidationPipe } from './common/pipes/validation.pipe';
@@ -30,8 +30,14 @@ async function bootstrap() {
         methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
         credentials: true,
     });
+
     app.use(compression());
-    app.use(helmet({ crossOriginResourcePolicy: false, contentSecurityPolicy: false }));
+    app.use(
+        helmet({
+            crossOriginResourcePolicy: false,
+            contentSecurityPolicy: false,
+        }),
+    );
 
     app.setGlobalPrefix('/api');
     app.enableVersioning();
@@ -41,6 +47,11 @@ async function bootstrap() {
 
     app.useStaticAssets(resolve('./public'));
     app.setBaseViewsDir(resolve('./views'));
+
+    // ✅ Serve Swagger static assets
+    app.useStaticAssets(join(__dirname, '..', 'node_modules', 'swagger-ui-dist'), {
+        prefix: '/apidoc-assets/',
+    });
 
     const createConfig = (title: string, description: string) => {
         return new DocumentBuilder()
@@ -66,58 +77,37 @@ async function bootstrap() {
     const documentAdmin = SwaggerModule.createDocument(app, configAdmin);
     const documentApi = SwaggerModule.createDocument(app, configApi);
 
-    // Admin Swagger
-    SwaggerModule.setup(
-        'apidoc/v1',
-        app,
-        {
-            ...documentAdmin,
-            paths: Object.fromEntries(
-                Object.entries(documentAdmin.paths).filter(
-                    ([key]) =>
-                        key.includes('admin') ||
-                        (key.includes('auth') &&
-                            !key.includes('register') &&
-                            !key.includes('login-user') &&
-                            !key.includes('logout-user')),
-                ),
-            ),
+    // Admin Swagger UI
+    SwaggerModule.setup('apidoc/v1', app, documentAdmin, {
+        swaggerOptions: {
+            defaultModelsExpandDepth: -1,
+            customCssUrl: '/apidoc-assets/swagger-ui.css',
         },
-        {
-            swaggerOptions: {
-                defaultModelsExpandDepth: -1,
-            },
-            useGlobalPrefix: false, // ✅ FIX
-        },
-    );
+        customJs: [
+            '/apidoc-assets/swagger-ui-bundle.js',
+            '/apidoc-assets/swagger-ui-standalone-preset.js',
+        ],
+        useGlobalPrefix: false,
+    });
 
-    // User Swagger
-    SwaggerModule.setup(
-        'apidoc/v1/user',
-        app,
-        {
-            ...documentApi,
-            paths: Object.fromEntries(
-                Object.entries(documentApi.paths).filter(
-                    ([key]) =>
-                        !key.includes('admin') ||
-                        (key.includes('auth') &&
-                            !key.includes('login-admin') &&
-                            !key.includes('logout-admin')),
-                ),
-            ),
+    // User Swagger UI
+    SwaggerModule.setup('apidoc/v1/user', app, documentApi, {
+        swaggerOptions: {
+            defaultModelsExpandDepth: -1,
+            customCssUrl: '/apidoc-assets/swagger-ui.css',
         },
-        {
-            swaggerOptions: {
-                defaultModelsExpandDepth: -1,
-            },
-            useGlobalPrefix: false, // ✅ FIX
-        },
-    );
+        customJs: [
+            '/apidoc-assets/swagger-ui-bundle.js',
+            '/apidoc-assets/swagger-ui-standalone-preset.js',
+        ],
+        useGlobalPrefix: false,
+    });
 
     await app.listen(configService.getOrThrow('PORT'), () => {
         logger.debug(
-            `[${configService.get('PROJECT_NAME')} | ${configService.get('NODE_ENV')}] is running: ${configService.get('BACKEND_URL')}/apidoc/v1`,
+            `[${configService.get('PROJECT_NAME')} | ${configService.get('NODE_ENV')}] is running: ${configService.get(
+                'BACKEND_URL',
+            )}/apidoc/v1`,
         );
     });
 }
