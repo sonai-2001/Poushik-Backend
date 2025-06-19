@@ -5,10 +5,18 @@ import { BaseRepository } from '@common/bases/base.repository';
 import { User, UserDocument } from '../schemas/user.schema';
 import { ListingUserDto } from '../dto/user.dto';
 import { PaginationResponse } from '@common/types/api-response.type';
+import { PetOwnerRepository } from '@modules/pet-owner/pet.owner.repository';
+import { PetSellerRepository } from '@modules/seller/seller.repository';
+import { PetDoctorRepository } from '@modules/pet-doctor/pet-doctor.repository';
 
 @Injectable()
 export class UserRepository extends BaseRepository<UserDocument> {
-    constructor(@InjectModel(User.name) private readonly UserModel: Model<UserDocument>) {
+    constructor(
+        @InjectModel(User.name) private readonly UserModel: Model<UserDocument>,
+        private readonly petOwnerRepo: PetOwnerRepository,
+        private readonly petSellerRepo: PetSellerRepository,
+        private readonly petDoctorRepo: PetDoctorRepository,
+    ) {
         super(UserModel);
     }
 
@@ -59,7 +67,7 @@ export class UserRepository extends BaseRepository<UserDocument> {
         return await this.UserModel.findOne(params).populate('role').exec();
     }
 
-    async getUserDetails(params: FilterQuery<UserDocument>): Promise<UserDocument> {
+    async getUserDetails(params: FilterQuery<UserDocument>): Promise<any> {
         const aggregate = await this.UserModel.aggregate([
             { $match: params },
             {
@@ -99,7 +107,32 @@ export class UserRepository extends BaseRepository<UserDocument> {
             },
         ]);
 
-        return aggregate?.[0] || null;
+        const user = aggregate?.[0];
+        if (!user) return null;
+
+        const roleKey = user.role?.role;
+        const userId = user._id;
+        // console.log(roleKey);
+        console.log('user id is', userId);
+        let moreprofileDetails = null;
+        switch (roleKey) {
+            case 'pet-owner':
+                moreprofileDetails = await this.petOwnerRepo.findByUserId(userId);
+                break;
+            case 'seller':
+                moreprofileDetails = await this.petSellerRepo.findByUserId(userId);
+                break;
+            case 'pet-doctor':
+                moreprofileDetails = await this.petDoctorRepo.findByUserId(userId);
+                break;
+            default:
+                break;
+        }
+
+        return {
+            ...user,
+            moreprofileDetails,
+        };
     }
 
     async getAllPaginateAdmin(

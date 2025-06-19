@@ -8,12 +8,14 @@ import { PetDoctor, PetDoctorDocument } from './pet.doctor.schema';
 
 @Injectable()
 export class PetDoctorRepository extends BaseRepository<PetDoctorDocument> {
+    private readonly petDoctorModel: Model<PetDoctorDocument>;
     constructor(@InjectModel(PetDoctor.name) petDoctorModel: Model<PetDoctorDocument>) {
         super(petDoctorModel);
+        this.petDoctorModel = petDoctorModel;
     }
 
     // Custom method example
     async findByUserId(userId: string) {
-        return this.getByField({ userId });
+        return this.petDoctorModel.findOne({ userId }, { _id: 0, userId: 0 });
     }
 }

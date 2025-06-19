@@ -14,6 +14,7 @@ import {
     StatusUserDto,
     UpdateAdminProfileDto,
     UpdateFrontendUserDto,
+    UpdatePetOwnerProfileDto,
     UpdateUserDto,
 } from './dto/user.dto';
 import type { ApiResponse } from '@common/types/api-response.type';
@@ -21,6 +22,13 @@ import { UserRepository } from './repositories/user.repository';
 import { UserDocument } from './schemas/user.schema';
 import { Messages } from '@common/constants/messages';
 import { UserDeviceRepository } from '@modules/user-devices/repository/user-device.repository';
+import { PetOwnerRepository } from '@modules/pet-owner/pet.owner.repository';
+// import { PetDoctorRepository } from '@modules/pet-doctor/pet-doctor.repository';
+// import { PetSellerRepository } from '@modules/seller/seller.repository';
+// Somewhere near the service or top of the service file
+type UpdatePetOwnerParsedDto = Omit<UpdatePetOwnerProfileDto, 'pets'> & {
+    pets?: any[]; // or better: Array<{ name: string; type: string; breed: string; imageName?: string }>
+};
 
 @Injectable()
 export class UserService {
@@ -28,6 +36,10 @@ export class UserService {
         private readonly userRepository: UserRepository,
         private readonly userDeviceRepository: UserDeviceRepository,
         private readonly roleRepository: RoleRepository,
+        private readonly PetOwnerRepository: PetOwnerRepository,
+        // private readonly PetDoctorRepository: PetDoctorRepository,
+        // private readonly PetSellerRepository: PetSellerRepository,
+        // private readonly PetOwnerRepository: PetOwnerRepository,
     ) {}
 
     async updateAdminProfile(
@@ -360,5 +372,40 @@ export class UserService {
                 updateUser instanceof Error ? updateUser.message : Messages.SOMETHING_WENT_WRONG,
             );
         return { message: Messages.PROFILE_UPDATE_SUCCESS, data: updateUser };
+    }
+
+    async updatePetOwnerProfile(
+        userId: string,
+        dto: UpdatePetOwnerParsedDto,
+        fileData: {
+            profileImage?: string;
+            petImages?: string[];
+        },
+    ): Promise<{ message: string }> {
+        const { firstName, lastName, phone, address, pets } = dto;
+
+        // 1️⃣ Update shared User info
+        const userUpdatePayload: any = {};
+
+        if (firstName !== undefined) userUpdatePayload.firstName = firstName;
+        if (lastName !== undefined) userUpdatePayload.lastName = lastName;
+        if (fileData.profileImage) userUpdatePayload.profileImage = fileData.profileImage;
+
+        if (Object.keys(userUpdatePayload).length > 0) {
+            await this.userRepository.updateById(userUpdatePayload, userId);
+        }
+
+        // 2️⃣ Update Pet Owner specific data
+        const petOwnerUpdatePayload: any = {};
+
+        if (phone !== undefined) petOwnerUpdatePayload.phone = phone;
+        if (address !== undefined) petOwnerUpdatePayload.address = address;
+        if (pets !== undefined) petOwnerUpdatePayload.pets = pets;
+
+        if (Object.keys(petOwnerUpdatePayload).length > 0) {
+            await this.PetOwnerRepository.updateByUserId(userId, petOwnerUpdatePayload);
+        }
+
+        return { message: 'Pet owner profile updated successfully.' };
     }
 }

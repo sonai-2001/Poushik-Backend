@@ -301,36 +301,34 @@ export class EmailVerificationDTO {
     otp: string;
 }
 
-export class UserProfileUpdateDTO {
-    @ApiPropertyOptional({ description: 'Full name of user' })
-    @IsOptional()
-    @Transform(({ value }: TransformFnParams) => value?.trim())
-    @IsNotEmpty({ message: 'Full name is required' })
-    fullName?: string;
+export class UpdateProfileDto {
+    // User fields
+    firstName?: string;
+    lastName?: string;
+    profileImage?: string;
 
-    @ApiPropertyOptional({ description: 'Email address' })
-    @IsOptional()
-    @Transform(({ value }: TransformFnParams) => value?.trim() && value?.toLowerCase())
-    @IsEmail({}, { message: 'Please enter a valid email!' })
-    @IsNotEmpty({ message: 'Email address is required!' })
-    email?: string;
-
-    @ApiPropertyOptional({ description: 'Phone number' })
-    @IsOptional()
+    // Pet Owner fields
     phone?: string;
+    address?: string;
 
-    @ApiPropertyOptional({
-        description: 'Country code for phone number',
-    })
-    @IsOptional()
-    countryCode?: string;
+    pets?: {
+        name: string;
+        type: string;
+        breed: string;
+        imageName?: string;
+    }[];
 
-    @ApiPropertyOptional({
-        description: 'Profile image (jpg, png, jpeg)',
-        type: 'string',
-        format: 'binary',
-    })
-    profileImage: string;
+    // Pet Doctor fields
+    clinicName?: string;
+    clinicAddress?: string;
+    specialization?: string;
+    licenseNumber?: string;
+    licenseDocument?: string;
+    images?: string[];
+
+    // Pet Seller fields
+    storeName?: string;
+    businessLicense?: string;
 }
 
 export class ForgotPasswordDTO {
@@ -534,6 +532,70 @@ export class StatusUserDto {
     status: string;
 }
 
+// dto/base-user-update.dto.ts
+export class BaseUserUpdateDto {
+    @ApiPropertyOptional({ example: 'John' })
+    @IsOptional()
+    @IsString()
+    firstName?: string;
+
+    @ApiPropertyOptional({ example: 'Doe' })
+    @IsOptional()
+    @IsString()
+    lastName?: string;
+
+    @ApiPropertyOptional({
+        example: 'profile123.jpg',
+        description: 'Profile image filename',
+    })
+    @IsOptional()
+    @IsString()
+    profileImage?: string;
+}
+
+export class UpdatePetOwnerProfileDto extends BaseUserUpdateDto {
+    @ApiPropertyOptional({ example: '+1234567890' })
+    @IsOptional()
+    @IsString()
+    phone?: string;
+
+    @ApiPropertyOptional({ example: '123 Elm Street, City' })
+    @IsOptional()
+    @IsString()
+    address?: string;
+
+    @ApiPropertyOptional({
+        description: 'List of pets as a JSON string',
+        example: JSON.stringify([
+            {
+                name: 'Buddy',
+                type: 'Dog',
+                breed: 'Golden Retriever',
+            },
+        ]),
+    })
+    @IsOptional()
+    @IsString()
+    pets?: string; // ✅ Accept pets as a JSON string (to handle file + structured input)
+}
+
+export class UpdatePetDoctorProfileDto extends BaseUserUpdateDto {
+    phone?: string;
+    clinicName?: string;
+    clinicAddress?: string;
+    specialization?: string;
+    licenseNumber?: string;
+    licenseDocument?: string;
+    images?: string[];
+}
+
+export class UpdatePetSellerProfileDto extends BaseUserUpdateDto {
+    phone?: string;
+    storeName?: string;
+    businessLicense?: string;
+    licenseDocument?: string;
+    images?: string[];
+}
 export class UpdateUserDto {
     @ApiPropertyOptional({ description: 'Email address' })
     @Transform(({ value }: TransformFnParams) =>

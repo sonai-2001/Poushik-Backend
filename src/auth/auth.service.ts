@@ -442,7 +442,7 @@ export class AuthService {
             _id: checkIfExists._id,
         });
         if (!userDetails) throw new BadRequestException(Messages.USER_MISSING_ERROR);
-        console.log(userDetails);
+        // console.log(userDetails);
         const isAdmin =
             userDetails.role['role'] === 'admin' || userDetails.role['role'] === 'super-admin';
         const isAdminRoute = requestedRoute === 'login-admin';
@@ -458,7 +458,12 @@ export class AuthService {
             throw new BadRequestException(Messages.EMAIL_NOT_VERIFIED);
         }
 
-        const payload = { id: checkIfExists._id };
+        const payload = {
+            id: userDetails._id,
+            role: {
+                role: userDetails.role?.role,
+            },
+        };
         const token = this.jwtService.sign(payload);
         const refreshToken = await this.generateRefreshToken(token, checkIfExists._id);
 

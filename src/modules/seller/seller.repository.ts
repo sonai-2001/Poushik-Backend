@@ -8,11 +8,13 @@ import { PetSeller, PetSellerDocument } from './seller.schema';
 
 @Injectable()
 export class PetSellerRepository extends BaseRepository<PetSellerDocument> {
+    private readonly sellerModel: Model<PetSellerDocument>;
     constructor(@InjectModel(PetSeller.name) sellerModel: Model<PetSellerDocument>) {
         super(sellerModel);
+        this.sellerModel = sellerModel;
     }
 
     async findByUserId(userId: string) {
-        return this.getByField({ userId });
+        return this.sellerModel.findOne({ userId }, { _id: 0, userId: 0 });
     }
 }
