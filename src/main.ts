@@ -31,7 +31,7 @@ async function bootstrap() {
         credentials: true,
     });
     app.use(compression());
-    app.use(helmet({ crossOriginResourcePolicy: false }));
+    app.use(helmet({ crossOriginResourcePolicy: false, contentSecurityPolicy: false }));
 
     app.setGlobalPrefix('/api');
     app.enableVersioning();
