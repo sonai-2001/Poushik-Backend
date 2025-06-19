@@ -3,7 +3,7 @@
 import { BaseRepository } from '@common/bases/base.repository';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, UpdateQuery } from 'mongoose';
 import { PetSeller, PetSellerDocument } from './seller.schema';
 
 @Injectable()
@@ -16,5 +16,11 @@ export class PetSellerRepository extends BaseRepository<PetSellerDocument> {
 
     async findByUserId(userId: string) {
         return this.sellerModel.findOne({ userId }, { _id: 0, userId: 0 });
+    }
+    async updateByUserId(
+        userId: string,
+        update: UpdateQuery<PetSellerDocument>,
+    ): Promise<PetSellerDocument | null> {
+        return this.sellerModel.findOneAndUpdate({ userId }, update, { new: true });
     }
 }

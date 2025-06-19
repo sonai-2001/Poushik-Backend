@@ -12,6 +12,8 @@ export class PetSeller {
 
     @Prop({ required: true }) storeName: string;
 
+    @Prop({ required: true }) storeAddress: string;
+
     @Prop({ required: true }) businessLicense: string;
 
     @Prop({ required: true }) licenseDocument: string;

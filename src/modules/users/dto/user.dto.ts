@@ -225,6 +225,10 @@ export class Step2SellerDTO {
     @IsString()
     storeName: string;
 
+    @ApiProperty({ example: '123 Main St, Springfield' })
+    @IsString()
+    storeAddress: string;
+
     @ApiProperty({ example: 'SELL-2023-011' })
     @IsString()
     businessLicense: string;
@@ -580,21 +584,58 @@ export class UpdatePetOwnerProfileDto extends BaseUserUpdateDto {
 }
 
 export class UpdatePetDoctorProfileDto extends BaseUserUpdateDto {
-    phone?: string;
-    clinicName?: string;
-    clinicAddress?: string;
-    specialization?: string;
-    licenseNumber?: string;
-    licenseDocument?: string;
-    images?: string[];
+    @ApiProperty({ example: '+1-202-555-0198' })
+    @IsString()
+    @IsOptional()
+    phone: string;
+
+    @ApiProperty({ example: 'Healthy Paws Clinic' })
+    @IsString()
+    @IsOptional()
+    clinicName: string;
+
+    @ApiProperty({ example: '456 Vet Lane, Petville' })
+    @IsString()
+    @IsOptional()
+    clinicAddress: string;
+
+    @ApiProperty({ example: 'Small Animal Surgery' })
+    @IsString()
+    @IsOptional()
+    specialization: string;
+
+    @ApiPropertyOptional({
+        type: 'string',
+        format: 'binary',
+        description: 'Clinic or doctor profile images',
+    })
+    @IsOptional()
+    images: any; // 🧠 This will be handled by Multer in the controller
 }
 
 export class UpdatePetSellerProfileDto extends BaseUserUpdateDto {
-    phone?: string;
-    storeName?: string;
-    businessLicense?: string;
-    licenseDocument?: string;
-    images?: string[];
+    @ApiProperty({ example: '+1-202-555-0155' })
+    @IsString()
+    @IsOptional()
+    phone: string;
+
+    @ApiProperty({ example: 'Paw Supplies Store' })
+    @IsString()
+    @IsOptional()
+    storeName: string;
+
+    @ApiProperty({ example: '123 Main St, Springfield' })
+    @IsString()
+    @IsOptional()
+    storeAddress: string;
+
+    @ApiPropertyOptional({
+        type: 'string',
+        format: 'binary',
+        description: 'Add Some Images ',
+    })
+    @IsOptional()
+    images: any;
 }
 export class UpdateUserDto {
     @ApiPropertyOptional({ description: 'Email address' })

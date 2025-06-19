@@ -181,6 +181,7 @@ export class AuthController {
                 regToken: { type: 'string' },
                 phone: { type: 'string' },
                 storeName: { type: 'string' },
+                storeAddress: { type: 'string' },
                 businessLicense: { type: 'string' },
 
                 licenseDocument: {

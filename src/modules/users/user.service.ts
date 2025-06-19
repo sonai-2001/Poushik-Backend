@@ -14,7 +14,9 @@ import {
     StatusUserDto,
     UpdateAdminProfileDto,
     UpdateFrontendUserDto,
+    UpdatePetDoctorProfileDto,
     UpdatePetOwnerProfileDto,
+    UpdatePetSellerProfileDto,
     UpdateUserDto,
 } from './dto/user.dto';
 import type { ApiResponse } from '@common/types/api-response.type';
@@ -23,8 +25,9 @@ import { UserDocument } from './schemas/user.schema';
 import { Messages } from '@common/constants/messages';
 import { UserDeviceRepository } from '@modules/user-devices/repository/user-device.repository';
 import { PetOwnerRepository } from '@modules/pet-owner/pet.owner.repository';
-// import { PetDoctorRepository } from '@modules/pet-doctor/pet-doctor.repository';
-// import { PetSellerRepository } from '@modules/seller/seller.repository';
+import { PetDoctorRepository } from '@modules/pet-doctor/pet-doctor.repository';
+import { sanitizeUpdatePayload } from '@helpers/sanitizer';
+import { PetSellerRepository } from '@modules/seller/seller.repository';
 // Somewhere near the service or top of the service file
 type UpdatePetOwnerParsedDto = Omit<UpdatePetOwnerProfileDto, 'pets'> & {
     pets?: any[]; // or better: Array<{ name: string; type: string; breed: string; imageName?: string }>
@@ -37,8 +40,8 @@ export class UserService {
         private readonly userDeviceRepository: UserDeviceRepository,
         private readonly roleRepository: RoleRepository,
         private readonly PetOwnerRepository: PetOwnerRepository,
-        // private readonly PetDoctorRepository: PetDoctorRepository,
-        // private readonly PetSellerRepository: PetSellerRepository,
+        private readonly PetDoctorRepository: PetDoctorRepository,
+        private readonly PetSellerRepository: PetSellerRepository,
         // private readonly PetOwnerRepository: PetOwnerRepository,
     ) {}
 
@@ -390,9 +393,10 @@ export class UserService {
         if (firstName !== undefined) userUpdatePayload.firstName = firstName;
         if (lastName !== undefined) userUpdatePayload.lastName = lastName;
         if (fileData.profileImage) userUpdatePayload.profileImage = fileData.profileImage;
+        const sanitizedUserUpdate = sanitizeUpdatePayload(userUpdatePayload);
 
-        if (Object.keys(userUpdatePayload).length > 0) {
-            await this.userRepository.updateById(userUpdatePayload, userId);
+        if (Object.keys(sanitizedUserUpdate).length > 0) {
+            await this.userRepository.updateById(sanitizedUserUpdate, userId);
         }
 
         // 2️⃣ Update Pet Owner specific data
@@ -401,11 +405,87 @@ export class UserService {
         if (phone !== undefined) petOwnerUpdatePayload.phone = phone;
         if (address !== undefined) petOwnerUpdatePayload.address = address;
         if (pets !== undefined) petOwnerUpdatePayload.pets = pets;
+        const sanitizedPetOwnerUpdate = sanitizeUpdatePayload(petOwnerUpdatePayload);
 
-        if (Object.keys(petOwnerUpdatePayload).length > 0) {
-            await this.PetOwnerRepository.updateByUserId(userId, petOwnerUpdatePayload);
+        if (Object.keys(sanitizedPetOwnerUpdate).length > 0) {
+            await this.PetOwnerRepository.updateByUserId(userId, sanitizedPetOwnerUpdate);
         }
 
         return { message: 'Pet owner profile updated successfully.' };
+    }
+    async updatePetDoctorProfile(
+        userId: string,
+        dto: UpdatePetDoctorProfileDto,
+        fileData: {
+            profileImage?: string;
+            images?: string[];
+        },
+    ): Promise<{ message: string }> {
+        const { firstName, lastName, phone, clinicName, clinicAddress, specialization } = dto;
+
+        // 1️⃣ Update shared User info
+        const userUpdatePayload: any = {};
+
+        if (firstName !== undefined) userUpdatePayload.firstName = firstName;
+        if (lastName !== undefined) userUpdatePayload.lastName = lastName;
+        if (fileData.profileImage) userUpdatePayload.profileImage = fileData.profileImage;
+        const sanitizedUserUpdate = sanitizeUpdatePayload(userUpdatePayload);
+        if (Object.keys(sanitizedUserUpdate).length > 0) {
+            await this.userRepository.updateById({ $set: sanitizedUserUpdate }, userId);
+        }
+
+        // 2️⃣ Update Pet Doctor specific info
+        const petDoctorUpdatePayload: any = {};
+
+        if (phone !== undefined) petDoctorUpdatePayload.phone = phone;
+        if (clinicName !== undefined) petDoctorUpdatePayload.clinicName = clinicName;
+        if (clinicAddress !== undefined) petDoctorUpdatePayload.clinicAddress = clinicAddress;
+        if (specialization !== undefined) petDoctorUpdatePayload.specialization = specialization;
+        if (fileData.images?.length) petDoctorUpdatePayload.images = fileData.images;
+
+        const sanitizedDoctorUpdate = sanitizeUpdatePayload(petDoctorUpdatePayload);
+
+        if (Object.keys(sanitizedDoctorUpdate).length > 0) {
+            await this.PetDoctorRepository.updateByUserId(userId, { $set: sanitizedDoctorUpdate });
+        }
+
+        return { message: 'Pet doctor profile updated successfully.' };
+    }
+    async updatePetSellerProfile(
+        userId: string,
+        dto: UpdatePetSellerProfileDto,
+        fileData: {
+            profileImage?: string;
+            images?: string[];
+        },
+    ): Promise<{ message: string }> {
+        const { firstName, lastName, phone, storeName, storeAddress } = dto;
+
+        // 1️⃣ Update shared User info
+        const userUpdatePayload: any = {};
+
+        if (firstName !== undefined) userUpdatePayload.firstName = firstName;
+        if (lastName !== undefined) userUpdatePayload.lastName = lastName;
+        if (fileData.profileImage) userUpdatePayload.profileImage = fileData.profileImage;
+        const sanitizedUserUpdate = sanitizeUpdatePayload(userUpdatePayload);
+        if (Object.keys(sanitizedUserUpdate).length > 0) {
+            await this.userRepository.updateById({ $set: sanitizedUserUpdate }, userId);
+        }
+
+        // 2️⃣ Update Pet Doctor specific info
+        const petSellerUpdatePayload: any = {};
+
+        if (phone !== undefined) petSellerUpdatePayload.phone = phone;
+        if (storeName !== undefined) petSellerUpdatePayload.clinicName = storeName;
+        if (storeAddress !== undefined) petSellerUpdatePayload.clinicAddress = storeAddress;
+        if (fileData.images?.length) petSellerUpdatePayload.images = fileData.images;
+
+        const sanitizedSellerUpdate = sanitizeUpdatePayload(petSellerUpdatePayload);
+
+        if (Object.keys(sanitizedSellerUpdate).length > 0) {
+            await this.PetSellerRepository.updateByUserId(userId, { $set: sanitizedSellerUpdate });
+        }
+
+        return { message: 'Pet doctor profile updated successfully.' };
     }
 }

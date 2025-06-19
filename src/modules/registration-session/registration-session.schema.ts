@@ -45,6 +45,7 @@ export class RegistrationSession extends Document {
     @Prop({ type: Object }) sellerData?: {
         phone: string;
         storeName: string;
+        storeAddress: string;
         businessLicense: string;
 
         licenseDocument: string;

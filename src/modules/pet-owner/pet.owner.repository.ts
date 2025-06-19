@@ -27,4 +27,8 @@ export class PetOwnerRepository extends BaseRepository<PetOwnerDocument> {
     ): Promise<PetOwnerDocument | null> {
         return this.petOwnerModel.findOneAndUpdate({ userId }, { $set: update }, { new: true });
     }
+
+    // async updateByUserId(userId: string, updateData: UpdateQuery<PetDoctorDocument>) {
+    //     return this.model.findOneAndUpdate({ userId }, updateData, { new: true });
+    // }
 }

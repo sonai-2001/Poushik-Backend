@@ -296,6 +296,7 @@ export class AuthService {
                 storeName: dto.storeName,
                 businessLicense: dto.businessLicense,
                 licenseDocument: licenseFile.filename,
+                storeAddress: dto.storeAddress,
                 images: imageFilenames,
             },
             step2Completed: true,
