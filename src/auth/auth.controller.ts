@@ -208,13 +208,13 @@ export class AuthController {
         return this.authService.processStep2Seller(dto, licenseFile, imageFiles);
     }
 
-    @Post('send-otp')
+    @Post('register/send-otp')
     @ApiOperation({ summary: 'Send OTP to email after step 2' })
     async sendOtp(@Body() dto: SendOtpDTO) {
         return this.authService.sendOtpToEmail(dto.regToken);
     }
 
-    @Post('verify-otp')
+    @Post('register/verify-otp')
     @ApiOperation({ summary: 'Verify OTP sent to email' })
     async verifyOtp(@Body() dto: VerifyOtpDTO) {
         return this.authService.verifyOtp(dto.regToken, dto.otp);
